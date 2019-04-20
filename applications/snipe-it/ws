@@ -1,11 +1,13 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 APIMAGE=snipe/snipe-it:v4.6.4
 DBIMAGE=mysql:5.6
 IMAGE=$(basename ${PWD})
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
-[ "${ENV}" == "" ] && ENV=${PWD}/env
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
+
+ENV=${ENV:-${PWD}/env}
 [ ! -e "${ENV}" ] && ENV=${PWD}/env.template
 
 case $1 in

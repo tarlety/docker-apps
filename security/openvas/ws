@@ -1,9 +1,10 @@
 #!/bin/bash
-# Copyright 2019 tarlety@gmail.com
+
+DOCKERIMAGE=mikesplain/openvas:9
 
 case $1 in
 	"up")
-		docker run -d -p 443:443 --name openvas mikesplain/openvas:9
+		docker run -d -p 443:443 --name openvas ${DOCKERIMAGE}
 		;;
 	"down")
 		docker stop openvas

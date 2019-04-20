@@ -1,16 +1,17 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 IMAGE=$(basename ${PWD})
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
 
 case $1 in
 	"secret")
-		mkdir -p ${HOME}/.secret/.samba
+		mkdir -p ${SECRET}/.samba
 		echo "[samba] Auto-set samba username:" `whoami`
-		whoami > ${HOME}/.secret/.samba/user
+		whoami > ${SECRET}/.samba/user
 		echo "[samba] Auto-generating samba password..."
-		echo `gpg2 --gen-random --armor 1 20` > ${HOME}/.secret/.samba/pass
+		echo `gpg2 --gen-random --armor 1 20` > ${SECRET}/.samba/pass
 		;;
 	"build")
 		docker build \
@@ -19,8 +20,8 @@ case $1 in
 		;;
 	"up")
 		$0 down
-		USER=$(cat ${HOME}/.secret/.samba/user)
-		PASS=$(cat ${HOME}/.secret/.samba/pass)
+		USER=$(cat ${SECRET}/.samba/user)
+		PASS=$(cat ${SECRET}/.samba/pass)
 		docker run -p 139:139 -p 445:445 \
 			--name ${IMAGE} \
 			--restart=always \

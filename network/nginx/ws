@@ -1,9 +1,11 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 IMAGE=$(basename ${PWD})
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
-CERTS=${HOME}/.secret/.certs/nginx
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
+
+CERTS=${SECRET}/.certs/nginx
 KEY=${CERTS}/nginx-selfsigned.key
 CRT=${CERTS}/nginx-selfsigned.crt
 REQ=${CERTS}/nginx-selfsigned.req

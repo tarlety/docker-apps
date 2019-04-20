@@ -1,8 +1,9 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 IMAGE=$(basename ${PWD})
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
 
 case $1 in
 	"build")

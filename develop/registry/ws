@@ -1,9 +1,10 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 IMAGE=$(basename ${PWD})
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
-CERTS=${HOME}/.secret/.certs/registry
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
+CERTS=${SECRET}/.certs/registry
 
 case $1 in
 	"certs")

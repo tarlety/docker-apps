@@ -1,5 +1,4 @@
 FROM alpine
-MAINTAINER tarlety@gmail.com
 
 # Install samba
 RUN apk --no-cache --no-progress upgrade && \
