@@ -2,8 +2,9 @@
 
 DOCKERIMAGE=titpetric/netdata:1.11
 IMAGE=$(basename ${PWD})
-STORE=${STORE:-${HOME}/store/${IMAGE}}
-SECRET=${SECRET:-${STORE}/.secret}
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
 
 TGBOTTOKEN=`cat ${SECRET}/.netdata/tg-bot-token`
 TGCHATID=`cat ${SECRET}/.netdata/tg-chatid`
