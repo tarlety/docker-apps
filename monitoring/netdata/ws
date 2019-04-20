@@ -1,19 +1,20 @@
 #!/bin/bash
 # Copyright 2018 tarlety@gmail.com
 
-DOCKERIMAGE=tarlety/netdata:1.11.1
+DOCKERIMAGE=titpetric/netdata:1.11
 IMAGE=$(basename ${PWD})
-TGBOTTOKEN=`cat ${HOME}/.secret/.netdata/tg-bot-token`
-TGCHATID=`cat ${HOME}/.secret/.netdata/tg-chatid`
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+TGBOTTOKEN=`cat ${SECRET}/.netdata/tg-bot-token`
+TGCHATID=`cat ${SECRET}/.netdata/tg-chatid`
+STORE=${STORE:-${HOME}/store/${IMAGE}}
+SECRET=${SECRET:-${STORE}/.secret}
 
 case $1 in
 	"secret")
-		mkdir -p ${HOME}/.secret/.netdata/
+		mkdir -p ${SECRET}/.netdata/
 		read -p "[netdata] Input Telegram bot-token:" TG_BOT_TOKEN
-		echo $TG_BOT_TOKEN > ${HOME}/.secret/.netdata/tg-bot-token
+		echo $TG_BOT_TOKEN > ${SECRET}/.netdata/tg-bot-token
 		read -p "[netdata] Input Telegram chatid:" TG_CHATID
-		echo $TG_CHATID > ${HOME}/.secret/.netdata/tg-chatid
+		echo $TG_CHATID > ${SECRET}/.netdata/tg-chatid
 		;;
 	"up")
 		$0 down
@@ -57,7 +58,7 @@ case $1 in
 			-v ${PWD}/prometheus.yml:/etc/prometheus/prometheus.yml \
 			-v ${STORE}/`hostname`/prometheus:/prometheus \
 			${DOCKER_OPTIONS} \
-			prom/prometheus:v2.5.0
+			prom/prometheus:v2.9.1
 		;;
 	"p-down")
 		docker stop prometheus
