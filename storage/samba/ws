@@ -1,0 +1,64 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+IMAGE=$(basename ${PWD})
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+
+case $1 in
+	"secret")
+		mkdir -p ${HOME}/.secret/.samba
+		echo "[samba] Auto-set samba username:" `whoami`
+		whoami > ${HOME}/.secret/.samba/user
+		echo "[samba] Auto-generating samba password..."
+		echo `gpg2 --gen-random --armor 1 20` > ${HOME}/.secret/.samba/pass
+		;;
+	"build")
+		docker build \
+			${DOCKER_CUSTOM_NETWORK} \
+			-t ${IMAGE} .
+		;;
+	"up")
+		$0 down
+		USER=$(cat ${HOME}/.secret/.samba/user)
+		PASS=$(cat ${HOME}/.secret/.samba/pass)
+		docker run -p 139:139 -p 445:445 \
+			--name ${IMAGE} \
+			--restart=always \
+			-e TZ='Asia/Taipei' \
+			-e USERID=${UID} \
+			-e GROUPID=${GID} \
+			-v ${STORE}:/store \
+			-d ${IMAGE} \
+			-u "${USER};${PASS}" \
+			-s "store;/store;no;no;no;all;none;${USER}" \
+			-r
+		;;
+	"down")
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		;;
+	"clean")
+		$0 down
+		docker rmi ${IMAGE}
+		;;
+	"network-up")
+		$0 network-down
+		sudo iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+		sudo iptables -I INPUT -m state --state NEW -m udp -p udp --dport 445 -j ACCEPT
+		sudo iptables-save | sudo tee /etc/iptables/rules.v4
+		;;
+	"network-down")
+		sudo iptables -D INPUT -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+		sudo iptables -D INPUT -m state --state NEW -m udp -p udp --dport 445 -j ACCEPT
+		sudo iptables-save | sudo tee /etc/iptables/rules.v4
+		;;
+	*)
+		echo $(basename $0) secret
+		echo $(basename $0) build
+		echo $(basename $0) up
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		echo $(basename $0) network-up
+		echo $(basename $0) network-down
+		;;
+esac

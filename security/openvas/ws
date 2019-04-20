@@ -1,0 +1,19 @@
+#!/bin/bash
+# Copyright 2019 tarlety@gmail.com
+
+case $1 in
+	"up")
+		docker run -d -p 443:443 --name openvas mikesplain/openvas:9
+		;;
+	"down")
+		docker stop openvas
+		;;
+	"clean")
+		docker rm openvas
+		;;
+	*)
+		echo $(basename $0) up
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		;;
+esac

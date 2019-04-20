@@ -1,0 +1,74 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+DOCKERIMAGE=tarlety/netdata:1.11.1
+IMAGE=$(basename ${PWD})
+TGBOTTOKEN=`cat ${HOME}/.secret/.netdata/tg-bot-token`
+TGCHATID=`cat ${HOME}/.secret/.netdata/tg-chatid`
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+
+case $1 in
+	"secret")
+		mkdir -p ${HOME}/.secret/.netdata/
+		read -p "[netdata] Input Telegram bot-token:" TG_BOT_TOKEN
+		echo $TG_BOT_TOKEN > ${HOME}/.secret/.netdata/tg-bot-token
+		read -p "[netdata] Input Telegram chatid:" TG_CHATID
+		echo $TG_CHATID > ${HOME}/.secret/.netdata/tg-chatid
+		;;
+	"up")
+		$0 down
+		shift
+		DOCKER_OPTIONS=$*
+		# issue: found message 'apparmor="DENIED" operation="ptrace"' in kern.log.
+		# ref: https://github.com/moby/moby/issues/7276
+		docker run -d --cap-add SYS_PTRACE \
+			--security-opt seccomp:unconfined --security-opt apparmor:unconfined \
+			--restart=always \
+			-v ${PWD}/netdata.conf:/etc/netdata/netdata.conf:ro \
+			-v ${PWD}/httpcheck.conf:/etc/netdata/orig/health.d/httpcheck.conf:ro \
+			-v /proc:/host/proc:ro \
+			-v /sys:/host/sys:ro \
+			-v /var/run/docker.sock:/var/run/docker.sock:ro \
+			--network=host \
+			-e TELEGRAM_BOT_TOKEN=${TGBOTTOKEN} \
+                	-e TELEGRAM_CHAT_ID=${TGCHATID} \
+			--name ${IMAGE} \
+			${DOCKER_OPTIONS} \
+			${DOCKERIMAGE}
+		;;
+	"down")
+		$0 p-down
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		;;
+	"clean")
+		$0 down
+		docker rmi ${DOCKERIMAGE}
+		;;
+	"p-up")
+		$0 p-down
+		shift
+		DOCKER_OPTIONS=$*
+		sudo mkdir -p ${STORE}/`hostname`/prometheus
+		sudo chown nobody:nogroup ${STORE}/`hostname`/prometheus
+		docker run -d --name prometheus \
+			--restart=always \
+			--network=host \
+			-v ${PWD}/prometheus.yml:/etc/prometheus/prometheus.yml \
+			-v ${STORE}/`hostname`/prometheus:/prometheus \
+			${DOCKER_OPTIONS} \
+			prom/prometheus:v2.5.0
+		;;
+	"p-down")
+		docker stop prometheus
+		docker rm prometheus
+		;;
+	*)
+		echo $(basename $0) secret
+		echo $(basename $0) up ...
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		echo $(basename $0) p-up ...
+		echo $(basename $0) p-down
+		;;
+esac

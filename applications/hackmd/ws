@@ -1,0 +1,71 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+IMAGE=$(basename ${PWD})
+DBIMAGE=postgres:9.6-alpine
+APIMAGE=hackmdio/hackmd:1.2.0
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+
+case $1 in
+	"up")
+		$0 down
+		shift
+		DOCKER_OPTIONS=$*
+		docker run -d \
+			${DOCKER_CUSTOM_NETWORK} \
+			--restart=always \
+			--name ${IMAGE}-db \
+			-e POSTGRES_USER=hackmd \
+			-e POSTGRES_PASSWORD=hackmdpass \
+			-e POSTGRES_DB=hackmd \
+			-v ${STORE}/data:/var/lib/postgresql/data \
+			${DOCKER_OPTIONS} \
+			${DBIMAGE}
+		[ "$FACEBOOK_CLIENTID" != "" ] && FACEBOOK_CLIENTID="-e CMD_FACEBOOK_CLIENTID=$FACEBOOK_CLIENTID"
+		[ "$FACEBOOK_CLIENTSECRET" != "" ] && FACEBOOK_CLIENTSECRET="-e CMD_FACEBOOK_CLIENTSECRET=$FACEBOOK_CLIENTSECRET"
+		[ "$TWITTER_CONSUMERKEY" != "" ] && TWITTER_CONSUMERKEY="-e CMD_TWITTER_CONSUMERKEY=$TWITTER_CONSUMERKEY"
+		[ "$TWITTER_CONSUMERSECRET" != "" ] && TWITTER_CONSUMERSECRET="-e CMD_TWITTER_CONSUMERSECRET=$TWITTER_CONSUMERSECRET"
+		[ "$GITHUB_CLIENTID" != "" ] && GITHUB_CLIENTID="-e CMD_GITHUB_CLIENTID=$GITHUB_CLIENTID"
+		[ "$GITHUB_CLIENTSECRET" != "" ] && GITHUB_CLIENTSECRET="-e CMD_GITHUB_CLIENTSECRET=$GITHUB_CLIENTSECRET"
+		[ "$DROPBOX_CLIENTID" != "" ] && DROPBOX_CLIENTID="-e CMD_DROPBOX_CLIENTID=$DROPBOX_CLIENTID"
+		[ "$DROPBOX_CLIENTSECRET" != "" ] && DROPBOX_CLIENTSECRET="-e CMD_DROPBOX_CLIENTSECRET=$DROPBOX_CLIENTSECRET"
+		[ "$GOOGLE_CLIENTID" != "" ] && GOOGLE_CLIENTID="-e CMD_GOOGLE_CLIENTID=$GOOGLE_CLIENTID"
+		[ "$GOOGLE_CLIENTSECRET" != "" ] && GOOGLE_CLIENTSECRET="-e CMD_GOOGLE_CLIENTSECRET=$GOOGLE_CLIENTSECRET"
+		[ "$IMGUR_CLIENTID" != "" ] && IMGUR_CLIENTID="-e CMD_IMGUR_CLIENTID=$IMGUR_CLIENTID"
+		docker run -d \
+			${DOCKER_CUSTOM_NETWORK} \
+			--link ${IMAGE}-db:database \
+			--restart=always \
+			--name ${IMAGE}-ap \
+			-e HMD_DB_URL=postgres://hackmd:hackmdpass@database:5432/hackmd \
+			$FACEBOOK_CLIENTID $FACEBOOK_CLIENTSECRET \
+			$TWITTER_CONSUMERKEY $TWITTER_CONSUMERSECRET \
+			$GITHUB_CLIENTID $GITHUB_CLIENTSECRET \
+			$DROPBOX_CLIENTID $DROPBOX_CLIENTSECRET \
+			$GOOGLE_CLIENTID $GOOGLE_CLIENTSECRET \
+			$IMGUR_CLIENTID \
+			${DOCKER_OPTIONS} \
+			${APIMAGE}
+		;;
+	"down")
+		docker stop ${IMAGE}-ap
+		docker stop ${IMAGE}-db
+		docker rm ${IMAGE}-ap
+		docker rm ${IMAGE}-db
+		;;
+	"clean")
+		$0 down
+		docker rmi ${DBIMAGE}
+		docker rmi ${APIMAGE}
+		;;
+	"cleanclean")
+		$0 clean
+		sudo rm -rf ${STORE}
+		;;
+	*)
+		echo $(basename $0) up ...
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		echo $(basename $0) cleanclean
+		;;
+esac

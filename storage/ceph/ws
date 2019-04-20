@@ -1,0 +1,177 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+DOCKERIMAGE=ceph/daemon
+IMAGE=$(basename ${PWD})
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+
+case $1 in
+	"mon")
+		shift
+		HOSTIP=$1
+		NETWORK=$2
+		docker run -d --net=host \
+			--restart=always \
+			-v ${STORE}/etc/ceph:/etc/ceph \
+			-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
+			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+			-e MON_IP=$HOSTIP \
+			-e CEPH_PUBLIC_NETWORK=$NETWORK \
+			--name mon \
+			${DOCKERIMAGE} mon
+		;;
+	"mgr")
+		docker run -d --net=host \
+			--restart=always \
+			-v ${STORE}/etc/ceph:/etc/ceph \
+			-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
+			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+			--name mgr \
+			${DOCKERIMAGE} mgr
+		;;
+	"osds")
+		shift
+		for DEV in $*
+		do
+			if [ "$DEV" == "osdp" ]
+			then
+				OSDNAME=osdp
+				docker run -d --net=host \
+					--pid=host \
+					--restart=always \
+					-v ${STORE}/etc/ceph/:/etc/ceph \
+					-v ${STORE}/var/lib/ceph/:/var/lib/ceph \
+					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+					-v /mnt/osd:/var/lib/ceph/osd \
+					--name $OSDNAME \
+					${DOCKERIMAGE} osd_directory
+			else
+				OSDNAME=osd${DEV//\//-}
+				docker run -d --net=host \
+					--pid=host \
+					--restart=always \
+					--privileged=true \
+					-v ${STORE}/etc/ceph:/etc/ceph \
+					-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
+					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+					-v /dev/:/dev/ \
+					-e OSD_DEVICE=$DEV \
+					--name $OSDNAME \
+					${DOCKERIMAGE} osd_ceph_disk
+			fi
+		done
+		;;
+	"osdclean")
+		shift
+		DEV=$1
+		ID=$2
+		if [ "$DEV" == "osdp" ]
+		then
+			OSDNAME=osdp
+		else
+			OSDNAME=osd${DEV//\//-}
+		fi
+		echo "clean $OSDNAME, osd.$ID"
+
+		docker exec mon ceph osd out $ID
+		docker exec mon ceph osd crush remove osd.$ID
+		docker stop $OSDNAME
+		docker exec mon ceph osd rm $ID
+		docker exec mon ceph auth del osd.$ID
+		docker rm $OSDNAME
+		;;
+	"zap")
+		shift
+		for DEV in $*
+		do
+			docker run --rm --privileged=true \
+				-v /dev/:/dev/ \
+				-e OSD_DEVICE=$DEV \
+				${DOCKERIMAGE} zap_device
+		done
+		;;
+	"mds")
+		shift
+		PGNUM=$1
+		docker run -d --net=host \
+			--restart=always \
+			-v ${STORE}/etc/ceph:/etc/ceph \
+			-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
+			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+			-e CEPHFS_CREATE=1 \
+			-e CEPHFS_DATA_POOL_PG=$PGNUM \
+			-e CEPHFS_METADATA_POOL_PG=$PGNUM \
+			--name mds \
+			${DOCKERIMAGE} mds
+		;;
+	"mdsclean")
+		docker exec mon ceph tell mon.\* injectargs '--mon-allow-pool-delete=true'
+		docker stop mds
+		docker rm mds
+		docker exec mon ceph mds fail 0
+		docker exec mon ceph fs rm cephfs --yes-i-really-mean-it
+		docker exec mon ceph osd pool delete cephfs_data cephfs_data --yes-i-really-really-mean-it
+		docker exec mon ceph osd pool delete cephfs_metadata cephfs_metadata --yes-i-really-really-mean-it
+		;;
+	"mdsmount")
+		shift
+		ACTIVEMDS=$1
+		sudo apt install ceph-common autofs -y
+		if [ ! -e "${STORE}/etc/ceph/admin.secret" ]
+		then
+			sudo cp ${STORE}/etc/ceph/ceph.client.admin.keyring ${STORE}/etc/ceph/admin.secret
+			sudo vi ${STORE}/etc/ceph/admin.secret
+		fi
+		cat /etc/auto.misc | grep "^mds" | grep ceph | grep ${ACTIVEMDS} || echo "mds -fstype=ceph,noatime,nodiratime,name=admin,secretfile=${STORE}/etc/ceph/admin.secret ${ACTIVEMDS}:/" | sudo tee -a /etc/auto.misc
+		cat /etc/auto.master | grep mnt | grep -F "/etc/auto.misc" || echo "/mnt/misc /etc/auto.misc --timeout 0" | sudo tee -a /etc/auto.master
+		sudo service autofs restart
+		;;
+        "clean")
+                docker stop mgr mon mds
+                docker rm mgr mon mds
+                ;;
+        "cleanclean")
+                $0 clean
+		docker rmi ${DOCKERIMAGE}
+                sudo rm -rf ${STORE}
+                ;;
+	"p-up")
+		$0 p-down
+		shift
+		DOCKER_OPTIONS=$*
+		sudo mkdir -p ${STORE}/`hostname`/prometheus
+		sudo chown nobody:nogroup ${STORE}/`hostname`/prometheus
+		docker exec mgr ceph mgr module enable prometheus
+		docker exec mgr ceph config set mgr mgr/prometheus/server_addr 127.0.0.1
+		;;
+	"p-down")
+		docker exec mgr ceph mgr module disable prometheus
+		;;
+	"d-up")
+		docker exec mgr ceph mgr module enable dashboard
+		docker exec mgr ceph config set mgr mgr/dashboard/server_addr 127.0.0.1
+		docker exec mgr ceph dashboard create-self-signed-cert
+		docker exec mgr ceph dashboard set-login-credentials admin admin
+		docker exec mgr ceph mgr services
+		;;
+	"d-down")
+		docker exec mgr ceph mgr module disable dashboard
+		;;
+	*)
+		echo $(basename $0) prepare
+		echo $(basename $0) mon hostip network
+		echo $(basename $0) mgr
+		echo $(basename $0) osds osdp dev1 dev2 ...
+		echo $(basename $0) osdclean osdp/dev_name osd.id
+		echo $(basename $0) zap dev1 dev2 ...
+		echo $(basename $0) mds pgnum
+		echo $(basename $0) mdsclean
+		echo $(basename $0) mdsmount mdshost
+		echo $(basename $0) clean
+		echo $(basename $0) cleanclean
+		echo $(basename $0) p-up ...
+		echo $(basename $0) p-down
+		echo $(basename $0) d-up
+		echo $(basename $0) d-down
+		;;
+esac

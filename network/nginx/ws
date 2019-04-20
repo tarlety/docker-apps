@@ -1,0 +1,76 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+IMAGE=$(basename ${PWD})
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+CERTS=${HOME}/.secret/.certs/nginx
+KEY=${CERTS}/nginx-selfsigned.key
+CRT=${CERTS}/nginx-selfsigned.crt
+REQ=${CERTS}/nginx-selfsigned.req
+DHP=${CERTS}/dhparam.pem
+
+case $1 in
+	"certs")
+		[ "$DOMAIN" != "" ] || DOMAIN=$HOST
+		[ "$SUBJECT" != "" ] && SUBJECT="-subj $SUBJECT"
+		mkdir -p ${CERTS}
+		[ "$EXT" == "" ] && {
+			EXT=${CERTS}/v3.ext
+			cat v3.ext.template | envsubst "\$DOMAIN" > $EXT
+			vi $EXT
+		}
+		openssl genrsa -out $KEY
+		openssl req -sha512 -new -key $KEY -out $REQ $SUBJECT
+		openssl x509 -sha512 -req -days 365 -in $REQ -signkey $KEY -out $CRT -extfile $EXT
+		[ ! -e $DHP ] && openssl dhparam -out $DHP 2048
+		;;
+	"store-prepare")
+		sudo rm -rf ${STORE}
+		sudo mkdir -p ${STORE}/certs
+		sudo cp ${CERTS}/* ${STORE}/certs
+		sudo chown root:root ${STORE}/certs/*
+		sudo chmod 400 ${STORE}/certs/*
+		sudo cp -r conf ${STORE}/conf
+		;;
+	"up")
+		$0 down
+		shift
+		DOCKER_OPTIONS=$*
+		docker run -d \
+			${DOCKER_CUSTOM_NETWORK} \
+			--restart=always \
+			--name ${IMAGE} \
+			-v ${STORE}/cache:/var/cache/nginx \
+			-v ${STORE}/run:/var/run \
+			-v ${STORE}/log:/var/log/nginx \
+			-v ${STORE}/html:/usr/share/nginx/html:ro \
+			-v ${STORE}/conf/default.conf:/etc/nginx/conf.d/default.conf:ro \
+			-v ${STORE}/conf/stub-status.conf:/etc/nginx/conf.d/stub-status.conf:ro \
+			-v ${STORE}/conf/self-signed.conf:/etc/nginx/snippets/self-signed.conf:ro \
+			-v ${STORE}/conf/ssl-params.conf:/etc/nginx/snippets/ssl-params.conf:ro \
+			-v ${STORE}/certs/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt:ro \
+			-v ${STORE}/certs/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key:ro \
+			-v ${STORE}/certs/dhparam.pem:/etc/nginx/dhparam.pem:ro \
+			-p 80:80 \
+			-p 443:443 \
+			-p 127.0.0.1:8081:8081 \
+			${DOCKER_OPTIONS} \
+			${IMAGE}
+		;;
+	"down")
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		;;
+	"clean")
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		docker rmi ${IMAGE}
+		;;
+	*)
+		echo $(basename $0) certs
+		echo $(basename $0) store-prepare
+		echo $(basename $0) up ...
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		;;
+esac

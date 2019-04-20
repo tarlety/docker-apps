@@ -1,0 +1,41 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+DOCKERIMAGE=grafana/grafana:6.1.4
+IMAGE=$(basename ${PWD})
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+
+case $1 in
+	"up")
+		$0 down
+		shift
+		DOCKER_OPTIONS=$*
+		sudo mkdir -p ${STORE}/`hostname`/grafana
+		sudo chown 472:472 ${STORE}/`hostname`/grafana
+		docker run -d --name ${IMAGE} \
+			--restart=always \
+			--network=host \
+			-v ${STORE}/`hostname`/grafana:/var/lib/grafana \
+			${DOCKER_OPTIONS} \
+			${DOCKERIMAGE}
+		;;
+	"down")
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		;;
+	"clean")
+		$0 down
+		docker rmi ${DOCKERIMAGE}
+		;;
+	"plugins")
+		docker exec ${IMAGE}  grafana-cli plugins install grafana-piechart-panel
+		docker exec ${IMAGE}  grafana-cli plugins install grafana-kubernetes-app
+		docker restart ${IMAGE}
+		;;
+	*)
+		echo $(basename $0) up ...
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		echo $(basename $0) plugins
+		;;
+esac

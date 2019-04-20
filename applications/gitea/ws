@@ -1,0 +1,38 @@
+#!/bin/bash
+# Copyright 2018 tarlety@gmail.com
+
+DOCKERIMAGE=gitea/gitea:1.6.3
+IMAGE=$(basename ${PWD})
+[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+
+case $1 in
+	"up")
+		$0 down
+		shift
+		DOCKER_OPTIONS=$*
+		docker run -d --name=${IMAGE} \
+			--restart=always \
+			-v ${STORE}:/data \
+			${DOCKER_OPTIONS} \
+			${DOCKERIMAGE}
+		;;
+	"down")
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		;;
+	"clean")
+		docker stop ${IMAGE}
+		docker rm ${IMAGE}
+		docker rmi ${DOCKERIMAGE}
+		;;
+	"cleanclean")
+		$0 clean
+		sudo rm -rf ${STORE}
+		;;
+	*)
+		echo $(basename $0) up ...
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		echo $(basename $0) cleanclean
+		;;
+esac
