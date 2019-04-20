@@ -1,5 +1,4 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 DOCKERIMAGE=titpetric/netdata:1.11
 IMAGE=$(basename ${PWD})

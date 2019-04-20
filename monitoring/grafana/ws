@@ -1,9 +1,8 @@
 #!/bin/bash
-# Copyright 2018 tarlety@gmail.com
 
 DOCKERIMAGE=grafana/grafana:6.1.4
 IMAGE=$(basename ${PWD})
-[ "${STORE}" == "" ] && STORE=${HOME}/store/${IMAGE} || STORE=${STORE}/${IMAGE}
+STORE=${STORE:-${HOME}/store/${IMAGE}}
 
 case $1 in
 	"up")
