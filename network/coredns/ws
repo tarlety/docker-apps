@@ -1,0 +1,50 @@
+#!/bin/bash
+# ref: https://coredns.io/2017/07/24/quick-start/
+# ref: https://bugs.launchpad.net/kuryr-kubernetes/+bug/1823855
+#    - coredns 1.5.0 got released recently and removed the proxy plugin
+
+APPNAME=coredns
+IMAGE=coredns/coredns:1.4.0
+
+STORE=${STORE:-${HOME}/store}/${APPNAME}
+
+case $1 in
+	"config-templating")
+		shift
+		CONFIG=${1:-example}
+		rm -rf ${STORE}/config*
+		mkdir -p ${STORE}
+		cp -R config-${CONFIG} ${STORE}/config
+		cat ${STORE}/config/Corefile
+		;;
+	"up")
+		$0 down
+		shift
+		DOCKER_OPTIONS=$*
+		docker run -d \
+			--restart=always \
+			--name ${APPNAME} \
+			--expose=53 \
+			--expose=53/udp \
+			-p 1053:53 \
+			-p 1053:53/udp \
+			-v ${STORE}/config:/etc/coredns \
+			${DOCKER_OPTIONS} \
+			${IMAGE} -conf /etc/coredns/Corefile
+		;;
+	"down")
+		docker stop ${APPNAME}
+		docker rm ${APPNAME}
+		;;
+	"clean")
+		rm -rf ${STORE}
+		$0 down
+		docker rmi ${IMAGE}
+		;;
+	*)
+		echo $(basename $0) config-templating ...
+		echo $(basename $0) up ...
+		echo $(basename $0) down
+		echo $(basename $0) clean
+		;;
+esac
