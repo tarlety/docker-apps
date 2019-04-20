@@ -2,10 +2,11 @@
 
 DOCKERIMAGE=titpetric/netdata:1.11
 IMAGE=$(basename ${PWD})
-TGBOTTOKEN=`cat ${SECRET}/.netdata/tg-bot-token`
-TGCHATID=`cat ${SECRET}/.netdata/tg-chatid`
 STORE=${STORE:-${HOME}/store/${IMAGE}}
 SECRET=${SECRET:-${STORE}/.secret}
+
+TGBOTTOKEN=`cat ${SECRET}/.netdata/tg-bot-token`
+TGCHATID=`cat ${SECRET}/.netdata/tg-chatid`
 
 case $1 in
 	"secret")
