@@ -145,8 +145,8 @@ case $1 in
 		mkdir -p ${SECRET}
 		USERNAME=${USER}
 		PASSWORD=$(gpg --gen-random --armor 2 20 | head -c16)
-		echo ${USERNAME} > ${SECRET}/username
-		echo ${PASSWORD} > ${SECRET}/password
+		echo ${USERNAME} | gpg -ear ${GPGKEYNAME} -o ${SECRET}/username.enc
+		echo ${PASSWORD} | gpg -ear ${GPGKEYNAME} -o ${SECRET}/password.enc
 		docker run  --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
 		;;
 	"state")
