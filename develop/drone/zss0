@@ -36,8 +36,8 @@
 # Environments:
 
 VERSION=0.3.0
-SCRIPTNAME=docker-apps-drone-ws
 APPNAME=drone
+SCRIPTNAME=docker-apps-${APPNAME}
 SECRET=${SECRET:-"$PWD/.secret/$SCRIPTNAME"}
 CONFIG=${CONFIG:-"$PWD/.config/$SCRIPTNAME"}
 
@@ -50,6 +50,7 @@ DEFAULT_HOST=localhost
 DEFAULT_HOST_PORT=8080
 DEFAULT_GITEA_SERVER=gitea.minikube
 DEFAULT_GITEA_SERVER_IP=192.168.99.100
+DEFAULT_GPGKEYNAME=$USERNAME
 
 STORE=`cat $CONFIG/store 2>/dev/null`
 BASE_CONFIG=`cat $CONFIG/base_config 2>/dev/null`
@@ -132,7 +133,7 @@ case $1 in
 				echo "	store		The local repository for state."
 				echo "			Ex: $(basename $0) config store $DEFAULT_STORE"
 				echo "	image		The docker image to download."
-				echo "			Ex: $(basename $0) config store $DEFAULT_GITEA_SERVER"
+				echo "			Ex: $(basename $0) config store $DEFAULT_IMAGE"
 				echo "	host		A string containing your Drone server hostname or IP address."
 				echo "			Ex: $(basename $0) config store $DEFAULT_HOST"
 				echo "	host_port	The host machine port."
@@ -254,7 +255,7 @@ case $1 in
 				    --env=DRONE_SERVER_PROTO=http \
 				    --env=DRONE_TLS_AUTOCERT=false \
 				    --add-host ${GITEA_SERVER}:${GITEA_SERVER_IP} \
-				    --publish=8080:80 \
+				    --publish=${HOST_PORT}:80 \
                                     --restart=always \
                                     --detach=true \
                                     --name=${APPNAME} \
