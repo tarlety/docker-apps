@@ -42,6 +42,7 @@ APPNAME=registry
 SCRIPTNAME=docker-apps-${APPNAME}
 SECRET=${SECRET:-"$PWD/.secret/$SCRIPTNAME"}
 CONFIG=${CONFIG:-"$PWD/.config/$SCRIPTNAME"}
+SALT=${SECRET}/salt
 
 DEFAULT_STORE=${STORE:-".store/$SCRIPTNAME"}
 DEFAULT_BASE_CONFIG=nop
@@ -75,13 +76,14 @@ case $1 in
 		echo "## SCRIPT NAME: $SCRIPTNAME"
 		echo - VERSION: ${VERSION}
 		echo - STORE: $STORE
-		echo - SECRET: $SECRET
+		echo - SECRET: $SECRET $(echo $(cat $SALT 2>/dev/null) $(cat ${SECRET}/* | sha256sum 2>/dev/null) | sha1sum | cut -c1-8)
 		echo - CONFIG: $CONFIG
 		echo - IMAGE: $IMAGE
 		echo - UI_IMAGE: $UI_IMAGE
 		echo - HOST_PORT: $HOST_PORT
 		echo - HOST_UI_PORT: $HOST_UI_PORT
 		echo - GPGKEYNAME: $GPGKEYNAME $(gpg -k $GPGKEYNAME 2>/dev/null | sed -n '2p' | xargs)
+		echo - SALT: $(ls $SALT 2>/dev/null) $(cat $SALT $SALT 2>/dev/null | sha1sum | cut -c1-8)
 		echo "## REQUIREMENT:"
 		echo - docker: $(which docker)
 		echo - tar: $(which tar)
@@ -148,6 +150,8 @@ case $1 in
 		echo ${USERNAME} | gpg -ear ${GPGKEYNAME} -o ${SECRET}/username.enc
 		echo ${PASSWORD} | gpg -ear ${GPGKEYNAME} -o ${SECRET}/password.enc
 		docker run  --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
+		gpg --gen-random --armor 2 16 | base64 | cut -c1-16 > $SALT
+		$0 env > ${CONFIG}/env
 		;;
 	"state")
 		shift
