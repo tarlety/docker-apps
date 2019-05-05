@@ -1,5 +1,6 @@
 #!/bin/bash
 # [Reference] https://docs.docker.com/registry/deploying/
+# [TODO] enable TLS
 
 #------------------------------------------------------------------------------
 # Copyright (c) 2019, tarlety@gmail.com

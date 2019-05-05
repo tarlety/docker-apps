@@ -1,5 +1,6 @@
 #!/bin/bash
 # [Reference] https://docs.drone.io/installation/gitea/single-machine/
+# [TODO] enable TLS
 
 #------------------------------------------------------------------------------
 # Copyright (c) 2019, tarlety@gmail.com
