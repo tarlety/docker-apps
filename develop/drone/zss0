@@ -46,7 +46,7 @@ DEFAULT_BASE_CONFIG=nop
 DEFAULT_BASE_SECRET=nop
 DEFAULT_BASE_DATA=nop
 DEFAULT_IMAGE=drone/drone:1.1.0
-DEFAULT_DOMAIN=localhost
+DEFAULT_HOST=localhost
 DEFAULT_HOST_PORT=8080
 DEFAULT_GITEA_SERVER=gitea.minikube
 DEFAULT_GITEA_SERVER_IP=192.168.99.100
@@ -56,10 +56,10 @@ BASE_CONFIG=`cat $CONFIG/base_config 2>/dev/null`
 BASE_SECRET=`cat $CONFIG/base_secret 2>/dev/null`
 BASE_DATA=`cat $CONFIG/base_data 2>/dev/null`
 IMAGE=`cat $CONFIG/image 2>/dev/null`
-DOMAIN=`cat $CONFIG/domain 2>/dev/null`
+HOST=`cat $CONFIG/host 2>/dev/null`
+HOST_PORT=`cat $CONFIG/host_port 2>/dev/null`
 GITEA_SERVER=`cat $CONFIG/gitea_server 2>/dev/null`
 GITEA_SERVER_IP=`cat $CONFIG/gitea_server_ip 2>/dev/null`
-HOST_PORT=`cat $CONFIG/host_port 2>/dev/null`
 GPGKEYNAME=`cat $CONFIG/gpgkeyname 2>/dev/null`
 
 #------------------------------------------------------------------------------
@@ -77,10 +77,10 @@ case $1 in
 		echo - SECRET: $SECRET
 		echo - CONFIG: $CONFIG
 		echo - IMAGE: $IMAGE
-		echo - DOMAIN: $DOMAIN
+		echo - HOST: $HOST
+		echo - HOST_PORT: $HOST_PORT
 		echo - GITEA_SERVER: $GITEA_SERVER
 		echo - GITEA_SERVER_IP: $GITEA_SERVER_IP
-		echo - HOST_PORT: $HOST_PORT
 		echo - GPGKEYNAME: $GPGKEYNAME $(gpg -k $GPGKEYNAME 2>/dev/null | sed -n '2p' | xargs)
 		echo "## REQUIREMENT:"
 		echo - docker: $(which docker)
@@ -100,10 +100,15 @@ case $1 in
 				IMAGE=${1:-$DEFAULT_IMAGE}
 				echo $IMAGE > ${CONFIG}/image
 				;;
-			"domain")
+			"host")
 				shift
-				DOMAIN=${1:-$DEFAULT_DOMAIN}
-				echo $DOMAIN > ${CONFIG}/domain
+				HOST=${1:-$DEFAULT_HOST}
+				echo $HOST > ${CONFIG}/host
+				;;
+			"host_port")
+				shift
+				HOST_PORT=${1:-$DEFAULT_HOST_PORT}
+				echo $HOST_PORT > ${CONFIG}/host_port
 				;;
 			"gitea_server")
 				shift
@@ -114,11 +119,6 @@ case $1 in
 				shift
 				GITEA_SERVER_IP=${1:-$DEFAULT_GITEA_SERVER_IP}
 				echo $GITEA_SERVER_IP > ${CONFIG}/gitea_server_ip
-				;;
-			"host_port")
-				shift
-				HOST_PORT=${1:-$DEFAULT_HOST_PORT}
-				echo $HOST_PORT > ${CONFIG}/host_port
 				;;
 			"gpg")
 				shift
@@ -133,14 +133,14 @@ case $1 in
 				echo "			Ex: $(basename $0) config store $DEFAULT_STORE"
 				echo "	image		The docker image to download."
 				echo "			Ex: $(basename $0) config store $DEFAULT_GITEA_SERVER"
-				echo "	domain		A string containing your Drone server hostname or IP address."
-				echo "			Ex: $(basename $0) config store $DEFAULT_DOMAIN"
+				echo "	host		A string containing your Drone server hostname or IP address."
+				echo "			Ex: $(basename $0) config store $DEFAULT_HOST"
+				echo "	host_port	The host machine port."
+				echo "			Ex: $(basename $0) config store $DEFAULT_HOST_PORT"
 				echo "	gitea_server	A string containing your Gitea server url."
 				echo "			Ex: $(basename $0) config store $DEFAULT_GITEA_SERVER"
 				echo "	gitea_server_ip	A string containing your Gitea server ip address."
 				echo "			Ex: $(basename $0) config store $DEFAULT_GITEA_SERVER_IP"
-				echo "	host_port	The host machine port."
-				echo "			Ex: $(basename $0) config store $DEFAULT_HOST_PORT"
 				echo "	gpg		configure which gpg key to use."
 				echo "			Ex: $(basename $0) config gpg $DEFAULT_GPGKEYNAME"
 				;;
@@ -246,11 +246,11 @@ case $1 in
 				docker run \
 				    --volume=/var/run/docker.sock:/var/run/docker.sock \
 				    --volume=${STORE}/docker/data:/data \
-				    --volume=${SECRET}/gitea_server.crt:/usr/local/share/ca-certificates//gitea_server.crt \
+				    --volume=${SECRET}/gitea_server.crt:/usr/local/share/ca-certificates/gitea_server.crt \
 				    --env=DRONE_GITEA_SERVER=https://${GITEA_SERVER} \
 				    --env=DRONE_GIT_ALWAYS_AUTH=false \
 				    --env=DRONE_RUNNER_CAPACITY=2 \
-				    --env=DRONE_SERVER_HOST=${DOMAIN} \
+				    --env=DRONE_SERVER_HOST=${HOST}:${HOST_PORT} \
 				    --env=DRONE_SERVER_PROTO=http \
 				    --env=DRONE_TLS_AUTOCERT=false \
 				    --add-host ${GITEA_SERVER}:${GITEA_SERVER_IP} \
