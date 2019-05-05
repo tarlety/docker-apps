@@ -1,6 +1,5 @@
 #!/bin/bash
-# [Reference] https://docs.drone.io/installation/gitea/single-machine/
-# [TODO] Restricting access, https://docs.docker.com/registry/deploying/
+# [Reference] https://docs.docker.com/registry/deploying/
 
 #------------------------------------------------------------------------------
 # Copyright (c) 2019, tarlety@gmail.com
@@ -83,6 +82,8 @@ case $1 in
 		echo - GPGKEYNAME: $GPGKEYNAME $(gpg -k $GPGKEYNAME 2>/dev/null | sed -n '2p' | xargs)
 		echo "## REQUIREMENT:"
 		echo - docker: $(which docker)
+		echo - tar: $(which tar)
+		echo - gpg: $(which gpg)
 		echo =========================================================================
 		;;
 	"config")
@@ -140,9 +141,11 @@ case $1 in
 		;;
 	"secret-create")
 		mkdir -p ${SECRET}
-		openssl s_client -connect ${GITEA_SERVER}:443 -showcerts < /dev/null 2>/dev/null \
-			| openssl x509 -outform PEM \
-			> ${SECRET}/gitea_server.crt
+		USERNAME=${USER}
+		PASSWORD=$(gpg --gen-random --armor 2 20 | head -c16)
+		echo ${USERNAME} > ${SECRET}/username
+		echo ${PASSWORD} > ${SECRET}/password
+		docker run  --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
 		;;
 	"state")
 		shift
@@ -179,6 +182,7 @@ case $1 in
 				if [ "$TYPE" == "config" -o "$TYPE" == "" ]; then
 					if [ -e ${STORE}/state/$STATENAME-${APPNAME}-config.tgz ]
 					then
+						mkdir -p ${CONFIG}
 						cd ${CONFIG}
 						tar -zxf ${STORE}/state/$STATENAME-${APPNAME}-config.tgz
 						echo $STATENAME > ${CONFIG}/base_config
@@ -188,6 +192,7 @@ case $1 in
 				if [ "$TYPE" == "secret" -o "$TYPE" == "" ]; then
 					if [ -e ${STORE}/state/$STATENAME-${APPNAME}-secret.tgz.enc ]
 					then
+						mkdir -p ${SECRET}
 						cd ${SECRET}
 						gpg -d ${STORE}/state/$STATENAME-${APPNAME}-secret.tgz.enc | tar xz
 						echo $STATENAME > ${CONFIG}/base_secret
@@ -197,6 +202,7 @@ case $1 in
 				if [ "$TYPE" == "data" -o "$TYPE" == "" ]; then
 					if [ -e ${STORE}/data/$STATENAME-${APPNAME}-data.tgz.enc ]
 					then
+						mkdir -p ${STORE}/docker
 						cd ${STORE}/docker
 						gpg -d ${STORE}/data/$STATENAME-${APPNAME}-data.tgz.enc | tar xz
 						echo $STATENAME > ${CONFIG}/base_data
@@ -236,6 +242,11 @@ case $1 in
 		case $1 in
 			"up")
 				docker run \
+				    --volume=${SECRET}/htpasswd:/auth/htpasswd \
+				    --volume=${STORE}/docker/registry:/var/lib/registry \
+				    --env=REGISTRY_AUTH=htpasswd \
+				    --env="REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+				    --env=REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
 				    --publish=${HOST_PORT}:5000 \
                                     --restart=always \
                                     --detach=true \
