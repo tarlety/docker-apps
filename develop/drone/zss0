@@ -1,11 +1,13 @@
 #!/bin/bash
 # [Reference] https://docs.drone.io/installation/gitea/single-machine/
-# [TODO] enable TLS
+
+# backlogs:
+# - enable TLS
 
 #------------------------------------------------------------------------------
 # Copyright (c) 2019, tarlety@gmail.com
 #
-# Zerus Scripting Standard v0.3.0
+# Zerus Scripting Standard v0.4.0
 #
 # This standard defines script state management framework.
 # Following this framework, you can manage app states in a consistent way.
@@ -36,13 +38,13 @@
 #------------------------------------------------------------------------------
 # Environments:
 
-VERSION=0.3.0
+VERSION=0.4.0
 APPNAME=drone
 SCRIPTNAME=docker-apps-${APPNAME}
-SECRET=${SECRET:-"$PWD/.secret/$SCRIPTNAME"}
-CONFIG=${CONFIG:-"$PWD/.config/$SCRIPTNAME"}
+SECRET=${SECRET:-"${PWD}/.secret/${SCRIPTNAME}"}
+CONFIG=${CONFIG:-"${PWD}/.config/${SCRIPTNAME}"}
 
-DEFAULT_STORE=${STORE:-".store/$SCRIPTNAME"}
+DEFAULT_STORE=${STORE:-"${PWD}/.store/${SCRIPTNAME}"}
 DEFAULT_BASE_CONFIG=nop
 DEFAULT_BASE_SECRET=nop
 DEFAULT_BASE_DATA=nop
@@ -51,18 +53,18 @@ DEFAULT_HOST=localhost
 DEFAULT_HOST_PORT=8080
 DEFAULT_GITEA_SERVER=gitea.minikube
 DEFAULT_GITEA_SERVER_IP=192.168.99.100
-DEFAULT_GPGKEYNAME=$USERNAME
+DEFAULT_GPGKEYNAME=${USERNAME}
 
-STORE=`cat $CONFIG/store 2>/dev/null`
-BASE_CONFIG=`cat $CONFIG/base_config 2>/dev/null`
-BASE_SECRET=`cat $CONFIG/base_secret 2>/dev/null`
-BASE_DATA=`cat $CONFIG/base_data 2>/dev/null`
-IMAGE=`cat $CONFIG/image 2>/dev/null`
-HOST=`cat $CONFIG/host 2>/dev/null`
-HOST_PORT=`cat $CONFIG/host_port 2>/dev/null`
-GITEA_SERVER=`cat $CONFIG/gitea_server 2>/dev/null`
-GITEA_SERVER_IP=`cat $CONFIG/gitea_server_ip 2>/dev/null`
-GPGKEYNAME=`cat $CONFIG/gpgkeyname 2>/dev/null`
+STORE=`cat ${CONFIG}/store 2>/dev/null`
+BASE_CONFIG=`cat ${CONFIG}/base_config 2>/dev/null`
+BASE_SECRET=`cat ${CONFIG}/base_secret 2>/dev/null`
+BASE_DATA=`cat ${CONFIG}/base_data 2>/dev/null`
+IMAGE=`cat ${CONFIG}/image 2>/dev/null`
+HOST=`cat ${CONFIG}/host 2>/dev/null`
+HOST_PORT=`cat ${CONFIG}/host_port 2>/dev/null`
+GITEA_SERVER=`cat ${CONFIG}/gitea_server 2>/dev/null`
+GITEA_SERVER_IP=`cat ${CONFIG}/gitea_server_ip 2>/dev/null`
+GPGKEYNAME=`cat ${CONFIG}/gpgkeyname 2>/dev/null`
 
 #------------------------------------------------------------------------------
 # Commands
@@ -73,17 +75,17 @@ case $1 in
 		;;
 	"env")
 		echo =========================================================================
-		echo "## SCRIPT NAME: $SCRIPTNAME"
+		echo "## SCRIPT NAME: ${SCRIPTNAME}"
 		echo - VERSION: ${VERSION}
-		echo - STORE: $STORE
-		echo - SECRET: $SECRET
-		echo - CONFIG: $CONFIG
-		echo - IMAGE: $IMAGE
-		echo - HOST: $HOST
-		echo - HOST_PORT: $HOST_PORT
-		echo - GITEA_SERVER: $GITEA_SERVER
-		echo - GITEA_SERVER_IP: $GITEA_SERVER_IP
-		echo - GPGKEYNAME: $GPGKEYNAME $(gpg -k $GPGKEYNAME 2>/dev/null | sed -n '2p' | xargs)
+		echo - STORE: ${STORE}
+		echo - SECRET: ${SECRET} $(echo $(cat ${SALT} 2>/dev/null) $(cat ${SECRET}/* | sha256sum 2>/dev/null) | sha1sum | cut -c1-8)
+		echo - CONFIG: ${CONFIG}
+		echo - IMAGE: ${IMAGE}
+		echo - HOST: ${HOST}
+		echo - HOST_PORT: ${HOST_PORT}
+		echo - GITEA_SERVER: ${GITEA_SERVER}
+		echo - GITEA_SERVER_IP: ${GITEA_SERVER_IP}
+		echo - GPGKEYNAME: ${GPGKEYNAME} $(gpg -k ${GPGKEYNAME} 2>/dev/null | sed -n '2p' | xargs)
 		echo "## REQUIREMENT:"
 		echo - docker: $(which docker)
 		echo - tar: $(which tar)
@@ -96,57 +98,57 @@ case $1 in
 		case $1 in
 			"store")
 				shift
-				STORE=${1:-$DEFAULT_STORE}
-				echo $STORE > ${CONFIG}/store
+				STORE=${1:-${DEFAULT_STORE}}
+				echo ${STORE} > ${CONFIG}/store
 				;;
 			"image")
 				shift
-				IMAGE=${1:-$DEFAULT_IMAGE}
-				echo $IMAGE > ${CONFIG}/image
+				IMAGE=${1:-${DEFAULT_IMAGE}}
+				echo ${IMAGE} > ${CONFIG}/image
 				;;
 			"host")
 				shift
-				HOST=${1:-$DEFAULT_HOST}
-				echo $HOST > ${CONFIG}/host
+				HOST=${1:-${DEFAULT_HOST}}
+				echo ${HOST} > ${CONFIG}/host
 				;;
 			"host_port")
 				shift
-				HOST_PORT=${1:-$DEFAULT_HOST_PORT}
-				echo $HOST_PORT > ${CONFIG}/host_port
+				HOST_PORT=${1:-${DEFAULT_HOST_PORT}}
+				echo ${HOST_PORT} > ${CONFIG}/host_port
 				;;
 			"gitea_server")
 				shift
-				GITEA_SERVER=${1:-$DEFAULT_GITEA_SERVER}
-				echo $GITEA_SERVER > ${CONFIG}/gitea_server
+				GITEA_SERVER=${1:-${DEFAULT_GITEA_SERVER}}
+				echo ${GITEA_SERVER} > ${CONFIG}/gitea_server
 				;;
 			"gitea_server_ip")
 				shift
-				GITEA_SERVER_IP=${1:-$DEFAULT_GITEA_SERVER_IP}
-				echo $GITEA_SERVER_IP > ${CONFIG}/gitea_server_ip
+				GITEA_SERVER_IP=${1:-${DEFAULT_GITEA_SERVER_IP}}
+				echo ${GITEA_SERVER_IP} > ${CONFIG}/gitea_server_ip
 				;;
 			"gpg")
 				shift
-				GPGKEYNAME=${1:-$DEFAULT_GPGKEYNAME}
-				echo $GPGKEYNAME >  ${CONFIG}/gpgkeyname
+				GPGKEYNAME=${1:-${DEFAULT_GPGKEYNAME}}
+				echo ${GPGKEYNAME} >  ${CONFIG}/gpgkeyname
 				;;
 			*)
 				echo $(basename $0) config "<config_name>" "<config_value>"
 				echo ""
 				echo "config names:"
 				echo "	store		The local repository for state."
-				echo "			Ex: $(basename $0) config store $DEFAULT_STORE"
+				echo "			Ex: $(basename $0) config store ${DEFAULT_STORE}"
 				echo "	image		The docker image to download."
-				echo "			Ex: $(basename $0) config store $DEFAULT_IMAGE"
+				echo "			Ex: $(basename $0) config store ${DEFAULT_IMAGE}"
 				echo "	host		A string containing your Drone server hostname or IP address."
-				echo "			Ex: $(basename $0) config store $DEFAULT_HOST"
+				echo "			Ex: $(basename $0) config store ${DEFAULT_HOST}"
 				echo "	host_port	The host machine port."
-				echo "			Ex: $(basename $0) config store $DEFAULT_HOST_PORT"
+				echo "			Ex: $(basename $0) config store ${DEFAULT_HOST_PORT}"
 				echo "	gitea_server	A string containing your Gitea server url."
-				echo "			Ex: $(basename $0) config store $DEFAULT_GITEA_SERVER"
+				echo "			Ex: $(basename $0) config store ${DEFAULT_GITEA_SERVER}"
 				echo "	gitea_server_ip	A string containing your Gitea server ip address."
-				echo "			Ex: $(basename $0) config store $DEFAULT_GITEA_SERVER_IP"
+				echo "			Ex: $(basename $0) config store ${DEFAULT_GITEA_SERVER_IP}"
 				echo "	gpg		configure which gpg key to use."
-				echo "			Ex: $(basename $0) config gpg $DEFAULT_GPGKEYNAME"
+				echo "			Ex: $(basename $0) config gpg ${DEFAULT_GPGKEYNAME}"
 				;;
 		esac
 		;;
@@ -163,58 +165,56 @@ case $1 in
 		STATENAME=$3
 
 		mkdir -p ${STORE}/state ${STORE}/data
-		case $ACTION in
+		case ${ACTION} in
 			"save")
-				if [ "$TYPE" == "config" -o "$TYPE" == "" ]; then
+				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
+					echo ${STATENAME} > ${CONFIG}/base_config
 					$0 env > ${CONFIG}/env
-					echo $STATENAME > ${CONFIG}/base_config
 					cd ${CONFIG}
-					tar -zcf ${STORE}/state/$STATENAME-${APPNAME}-config.tgz .
+					tar -zcf ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz .
 					cd - &> /dev/null
 				fi
-				if [ "$TYPE" == "secret" -o "$TYPE" == "" ]; then
-					echo $STATENAME > ${CONFIG}/base_secret
-					mv -f ${STORE}/state/$STATENAME-$APPNAME-secret.tgz.enc ${STORE}/state/$STATENAME-bak-$APPNAME-secret.tgz.enc 2>/dev/null
+				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
+					echo ${STATENAME} > ${CONFIG}/base_secret
+					mv -f ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ${STORE}/state/${STATENAME}-bak-${APPNAME}-secret.tgz.enc &>/dev/null
 					cd ${SECRET}
-					tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/state/$STATENAME-${APPNAME}-secret.tgz.enc
+					tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc
 					cd - &> /dev/null
 				fi
-				if [ "$TYPE" == "data" -o "$TYPE" == "" ]; then
-					echo $STATENAME > ${CONFIG}/base_data
-					mv -f ${STORE}/data/$STATENAME-$APPNAME-data.tgz.enc ${STORE}/data/$STATENAME-bak-$APPNAME-data.tgz.enc 2>/dev/null
+				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
+					echo ${STATENAME} > ${CONFIG}/base_data
+					mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
 					cd ${STORE}/docker
-					tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/data/$STATENAME-${APPNAME}-data.tgz.enc
+					tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
 					cd - &> /dev/null
 				fi
 				;;
 			"load")
-				if [ "$TYPE" == "config" -o "$TYPE" == "" ]; then
-					if [ -e ${STORE}/state/$STATENAME-${APPNAME}-config.tgz ]
+				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
+					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz ]
 					then
-						mkdir -p ${CONFIG}
 						cd ${CONFIG}
-						tar -zxf ${STORE}/state/$STATENAME-${APPNAME}-config.tgz
-						echo $STATENAME > ${CONFIG}/base_config
+						tar -zxf ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz
 						cd - &> /dev/null
 					fi
+					echo ${STATENAME} > ${CONFIG}/base_config
 				fi
-				if [ "$TYPE" == "secret" -o "$TYPE" == "" ]; then
-					if [ -e ${STORE}/state/$STATENAME-${APPNAME}-secret.tgz.enc ]
+				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
+					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ]
 					then
-						mkdir -p ${SECRET}
 						cd ${SECRET}
-						gpg -d ${STORE}/state/$STATENAME-${APPNAME}-secret.tgz.enc | tar xz
-						echo $STATENAME > ${CONFIG}/base_secret
+						gpg -d ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc | tar xz
 						cd - &> /dev/null
 					fi
+					echo ${STATENAME} > ${CONFIG}/base_secret
 				fi
-				if [ "$TYPE" == "data" -o "$TYPE" == "" ]; then
-					if [ -e ${STORE}/data/$STATENAME-${APPNAME}-data.tgz.enc ]
+				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
+					if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
 					then
 						mkdir -p ${STORE}/docker
 						cd ${STORE}/docker
-						gpg -d ${STORE}/data/$STATENAME-${APPNAME}-data.tgz.enc | tar xz
-						echo $STATENAME > ${CONFIG}/base_data
+						gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+						echo ${STATENAME} > ${CONFIG}/base_data
 						cd - &> /dev/null
 					fi
 				fi
@@ -222,19 +222,19 @@ case $1 in
 			"list"|*)
 				HC='\033[0;93m'
 				NC='\033[0m'
-				if [ "$TYPE" == "config" -o "$TYPE" == "" ]; then
+				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
 					echo -e "${HC}## CONFIG: ${BASE_CONFIG}${NC}"
 					cd ${STORE}/state
-					ls *-$APPNAME-config.tgz 2>/dev/null | sed "s/\(.*\)-${APPNAME}-config.tgz/           \1/"
+					ls *-${APPNAME}-config.tgz 2>/dev/null | sed "s/\(.*\)-${APPNAME}-config.tgz/           \1/"
 					cd - &>/dev/null
 				fi
-				if [ "$TYPE" == "secret" -o "$TYPE" == "" ]; then
+				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
 					echo -e "${HC}## SECRET: ${BASE_SECRET}${NC}"
 					cd ${STORE}/state
-					ls *-$APPNAME-secret.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-secret.tgz.enc/           \1/"
+					ls *-${APPNAME}-secret.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-secret.tgz.enc/           \1/"
 					cd - &>/dev/null
 				fi
-				if [ "$TYPE" == "data" -o "$TYPE" == "" ]; then
+				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
 					echo -e "${HC}## DATA  : ${BASE_DATA}${NC}"
 					cd ${STORE}/data
 					ls *-${APPNAME}-data.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-data.tgz.enc/           \1/"
