@@ -49,10 +49,10 @@ DEFAULT_BASE_CONFIG=nop
 DEFAULT_BASE_SECRET=nop
 DEFAULT_BASE_DATA=nop
 DEFAULT_IMAGE=registry:2
-DEFAULT_UI_IMAGE=hyper/docker-registry-web
+DEFAULT_UI_IMAGE=hyper/docker-registry-web:v0.1.2
 DEFAULT_HOST_PORT=5000
 DEFAULT_HOST_UI_PORT=8080
-DEFAULT_GPGKEYNAME=${USERNAME}
+DEFAULT_GPGKEYNAME=$(whoami)
 
 STORE=`cat ${CONFIG}/store 2>/dev/null`
 BASE_CONFIG=`cat ${CONFIG}/base_config 2>/dev/null`
@@ -145,11 +145,11 @@ case $1 in
 		;;
 	"secret-create")
 		mkdir -p ${SECRET}
-		USERNAME=${USER}
+		USERNAME=$(whoami)
 		PASSWORD=$(gpg --gen-random --armor 2 20 | head -c16)
 		echo ${USERNAME} | gpg -ear ${GPGKEYNAME} -o ${SECRET}/username.enc
 		echo ${PASSWORD} | gpg -ear ${GPGKEYNAME} -o ${SECRET}/password.enc
-		docker run  --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
+		docker run --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
 		gpg --gen-random --armor 2 16 | base64 | cut -c1-16 > ${SALT}
 		;;
 	"state")
@@ -266,10 +266,14 @@ case $1 in
 		shift
 		case $1 in
 			"up")
+				USERNAME=$(gpg -d ${SECRET}/username.enc)
+				PASSWORD=$(gpg -d ${SECRET}/password.enc)
+				BASICAUTH=$(echo -n ${USERNAME}:${PASSWORD} | base64)
 				docker run \
 				    --env=REGISTRY_URL=http://${APPNAME}:5000/v2 \
 				    --env=REGISTRY_NAME=localhost:5000 \
 				    --env=REGISTRY_AUTH_ENABLED=false \
+				    --env=REGISTRY_BASIC_AUTH="${BASICAUTH}" \
 				    --link=${APPNAME}:${APPNAME} \
 				    --publish=${HOST_UI_PORT}:8080 \
                                     --restart=always \
