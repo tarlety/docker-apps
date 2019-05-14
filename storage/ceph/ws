@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKERIMAGE=ceph/daemon:v4.0.0-stable-4.0-nautilus-centos-7-x86_64
+DOCKERIMAGE=ceph/daemon:v3.2.1-stable-3.2-luminous-debian-9-x86_64
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
