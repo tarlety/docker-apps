@@ -64,22 +64,24 @@ case $1 in
 		;;
 	"osdclean")
 		shift
-		DEV=$1
-		ID=$2
-		if [ "$DEV" == "osdp" ]
-		then
-			OSDNAME=osdp
-		else
-			OSDNAME=osd${DEV//\//-}
-		fi
-		echo "clean $OSDNAME, osd.$ID"
+		for DEV in $*
+		do
+			if [ "$DEV" == "osdp" ]
+			then
+				OSDNAME=osdp
+			else
+				OSDNAME=osd${DEV//\//-}
+			fi
+			echo "clean ${OSDNAME}"
 
-		docker exec mon ceph osd out $ID
-		docker exec mon ceph osd crush remove osd.$ID
-		docker stop $OSDNAME
-		docker exec mon ceph osd rm $ID
-		docker exec mon ceph auth del osd.$ID
-		docker rm $OSDNAME
+			# TODO: it's broken now; fix it by getting id from container
+			#docker exec ${OSDNAME} ceph osd out $ID
+			#docker exec ${OSDNAME} ceph osd crush remove osd.$ID
+			#docker exec ${OSDNAME} ceph osd rm $ID
+			#docker exec ${OSDNAME} ceph auth del osd.$ID
+			docker stop ${OSDNAME}
+			docker rm ${OSDNAME}
+		done
 		;;
 	"zap")
 		shift
