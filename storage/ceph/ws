@@ -118,9 +118,9 @@ case $1 in
 		shift
 		ACTIVEMDS=$1
 		sudo apt install ceph-common autofs -y
-		echo $(sudo grep key ${STORE}/ceph/etc/ceph/ceph.client.admin.keyring  | cut -d= -f2) | \
-			sudo tee ${STORE}/ceph/etc/ceph/admin.secret
-		sudo chmod 600 ${STORE}/ceph/etc/ceph/admin.secret
+		echo $(sudo grep key ${STORE}/etc/ceph/ceph.client.admin.keyring  | cut -d= -f2) | \
+			sudo tee ${STORE}/etc/ceph/admin.secret
+		sudo chmod 600 ${STORE}/etc/ceph/admin.secret
 		cat /etc/auto.misc | grep "^mds" | grep ceph | grep ${ACTIVEMDS} || \
 			echo "mds -fstype=ceph,noatime,nodiratime,name=admin,secretfile=${STORE}/etc/ceph/admin.secret ${ACTIVEMDS}:/" | \
 			sudo tee -a /etc/auto.misc
