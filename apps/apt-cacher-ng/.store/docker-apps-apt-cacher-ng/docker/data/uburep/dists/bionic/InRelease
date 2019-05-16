@@ -1,0 +1,43 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Ubuntu
+Label: Ubuntu
+Suite: bionic
+Version: 18.04
+Codename: bionic
+Date: Thu, 26 Apr 2018 23:37:48 UTC
+Architectures: amd64 arm64 armhf i386 ppc64el s390x
+Components: main restricted universe multiverse
+Description: Ubuntu Bionic 18.04
+MD5Sum:
+ 32a92a5c20f378d42dd2d2f4f28f6637        628836439 Contents-amd64
+ 53c6a594819b51a5755f88b45d1eff7f         37766986 Contents-arm64.gz
+ cd7bf6d50403da4348ee48138eace986        585939706 Contents-ppc64el
+ af42d07307c5d1398c75e28986b36509        616261664 Contents-i386
+ 98f43960ac7029b4948a13614038593c        584794633 Contents-armhf
+ 31848d4faedf11946ff1af9c281f4e6b         39528051 Contents-amd64.gz
+ 14acbaf3166ff5b151cbac659bf6a491         36634480 Contents-s390x.gz
+ 195a6a0d0d71dfb503a5147e393c0b44        572390612 Contents-s390x
+ 269afcc7fa9613df0cfb7eb2af237043         38835948 Contents-i386.gz
+ 1e7266046709b615c06af64d2a94d928         37363610 Contents-armhf.gz
+ e3bd96173b2a5042a2d073cb92df24fc         37302459 Contents-ppc64el.gz
+ a97eebc9137999cf61cca13d79b1f98f        593769147 Contents-arm64
+ 55f3fa01bf4513da9f810307b51d612a          6214952 main/binary-amd64/Packages
+ 9f666ceefac581815e5f3add8b30d3b9          1343916 main/binary-amd64/Packages.gz
+ 706fccb10e613153dc61a1b997685afc               96 main/binary-amd64/Release
+ 9eae32e7c5450794889f9c3272587f5e          1019132 main/binary-amd64/Packages.xz
+ 5dd0ca3d1cbce6d2a74fcc3e1634ac12               96 main/binary-arm64/Release
+ ecb277968f03ae1f1c58f638e4d7e067          5924992 main/binary-arm64/Packages
+ 9ce79681a8cbe0bf95bac914ebe07ca0           974764 main/binary-arm64/Packages.xz
+ dc4ae471adaa83960bee8387427633a4          1284718 main/binary-arm64/Packages.gz
+ 9ad1bcb704dc5bfd751d49f322122773          5868226 main/binary-armhf/Packages
+ 6eea2f537e1dcd4b3270f508c094583f               96 main/binary-armhf/Release
+ 1d2fca5de77248fb282283dd25f4432e           968184 main/binary-armhf/Packages.xz
+ 2a24f85770aaf328cd2a130cab7845c6          1277026 main/binary-armhf/Packages.gz
+ 1bb83ca7cc34f15116c302ad753be475          1328087 main/binary-i386/Packages.gz
+ 685bb70b73cb22ef2c5225637930e073               95 main/binary-i386/Release
+ 827b09d6662437b89c70b755fd101741          6126108 main/binary-i386/Packages
+ e7788164dc2c76e6bbcfde7665cb8895          1006704 main/binary-i386/Packages.xz
+ 47b97ca55aa2df9d6bf92606c8270ee6          5927987 main/binary-ppc64el/Packages
+ 20c73e5f2439b2b7e14375c985ef5890           974200 main/binary-ppc64el/Pac
