@@ -262,7 +262,7 @@ case $1 in
 				;;
 		esac
 		;;
-	"cache")
+	"proxy")
 		# pull-through cached mirroring
 		# https://stackoverflow.com/questions/30930847/how-to-set-up-a-docker-registry-acting-as-a-proxy
 		shift
@@ -275,15 +275,15 @@ case $1 in
 				    --publish=${HOST_PORT}:5000 \
                                     --restart=always \
                                     --detach=true \
-                                    --name=${APPNAME}-cache \
+                                    --name=${APPNAME}-proxy \
                                     ${IMAGE}
 
 				echo 'Add to /etc/docker/daemon.json:'
 				echo 'registry-mirrors": ["http://<server>:5000"]'
 				;;
 			"down")
-				docker stop ${APPNAME}-cache
-				docker rm ${APPNAME}-cache
+				docker stop ${APPNAME}-proxy
+				docker rm ${APPNAME}-proxy
 				;;
 		esac
 		;;
@@ -318,7 +318,7 @@ case $1 in
 		echo $(basename $0) config ...
 		echo $(basename $0) secret-create
 		echo $(basename $0) "state [list/save/load] [config/secret/data] [state_name, ex: date-stage-env]"
-		echo $(basename $0) "[app/cache/ui] [up/down]"
+		echo $(basename $0) "[app/proxy/ui] [up/down]"
 		;;
 esac
 
