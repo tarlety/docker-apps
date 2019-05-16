@@ -235,7 +235,8 @@ case $1 in
 			echo "Acquire::http { Proxy \"http://${HOST}:${HOST_PORT}\"; };" | sudo tee ${APTPROXYCONF}
 			echo "Acquire::https { Proxy \"false\"; };" | sudo tee -a ${APTPROXYCONF}
 		else
-			echo "The file ${APTPROXYCONF} already exists. Please check the content by yourself"
+			echo "The file ${APTPROXYCONF} already exists. Please check the content:"
+			cat ${APTPROXYCONF}
 		fi
 		;;
 	"app")
