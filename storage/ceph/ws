@@ -122,7 +122,7 @@ case $1 in
 		ACTIVEMDS=$1
 		sudo apt install ceph-common${CEPHCOMMON_VERSION} autofs -y
 		sudo apt-mark hold ceph-common
-		echo $(sudo grep key ${STORE}/etc/ceph/ceph.client.admin.keyring  | cut -d= -f2) | \
+		echo $(sudo grep key ${STORE}/etc/ceph/ceph.client.admin.keyring  | cut -d= -f2-) | \
 			sudo tee ${STORE}/etc/ceph/admin.secret
 		sudo chmod 600 ${STORE}/etc/ceph/admin.secret
 		cat /etc/auto.misc | grep "^mds" | grep ceph | grep ${ACTIVEMDS} || \
