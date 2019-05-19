@@ -277,7 +277,7 @@ case $1 in
                                     --detach=true \
                                     --name=${APPNAME}-proxy \
                                     ${IMAGE}
-				sudo jq '. + {"registry-mirrors": ["https://localhost:5000"]}' /etc/docker/daemon.json
+				sudo jq '. + {"registry-mirrors": ["http://localhost:5000"]}' /etc/docker/daemon.json
 				;;
 			"down")
 				docker stop ${APPNAME}-proxy
