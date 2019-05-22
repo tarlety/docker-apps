@@ -86,8 +86,11 @@ case $1 in
 		echo - SALT: $(ls ${SALT} 2>/dev/null) $(cat ${SALT} ${SALT} 2>/dev/null | sha1sum | cut -c1-8)
 		echo "## REQUIREMENT:"
 		echo - docker: $(which docker)
+		echo - jq: $(which jq)
+		echo - sponge: $(which sponge)
 		echo - tar: $(which tar)
 		echo - gpg: $(which gpg)
+		echo - colordiff: $(which colordiff)
 		echo =========================================================================
 		;;
 	"config")
@@ -277,12 +280,15 @@ case $1 in
                                     --detach=true \
                                     --name=${APPNAME}-proxy \
                                     ${IMAGE}
-				sudo jq '. + {"registry-mirrors": ["http://localhost:5000"]}' /etc/docker/daemon.json
+				[[ -e /etc/docker/daemon.json ]] || echo '{}' | sudo tee -a /etc/docker/daemon.json
+				jq '. + {"registry-mirrors": ["http://localhost:5000"]}' /etc/docker/daemon.json | \
+					sudo sponge /etc/docker/daemon.json
 				;;
 			"down")
 				docker stop ${APPNAME}-proxy
 				docker rm ${APPNAME}-proxy
-				sudo jq 'del(."registry-mirrors")' /etc/docker/daemon.json
+				jq 'del(."registry-mirrors")' /etc/docker/daemon.json | \
+					sudo sponge /etc/docker/daemon.json
 				;;
 		esac
 		;;
