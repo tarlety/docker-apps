@@ -83,6 +83,7 @@ case $1 in
 		echo - docker: $(which docker)
 		echo - tar: $(which tar)
 		echo - gpg: $(which gpg)
+		echo - colordiff: $(which colordiff)
 		echo =========================================================================
 		;;
 	"config")
