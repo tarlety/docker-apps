@@ -240,6 +240,17 @@ case $1 in
 			cat ${APTPROXYCONF}
 		fi
 		;;
+	"trust")
+		shift
+		case $1 in
+			"google")
+				docker exec apt-cacher-ng \
+					apt install sudo curl gpg -y
+				docker exec -it apt-cacher-ng \
+					bash -c "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -"
+				;;
+		esac
+		;;
 	"app")
 		shift
 		case $1 in
@@ -265,6 +276,7 @@ case $1 in
 		echo $(basename $0) secret-create
 		echo $(basename $0) "state [list/save/load] [config/secret/data] [state_name, ex: date-stage-env]"
 		echo $(basename $0) "[make-docker/make-conf]"
+		echo $(basename $0) "trust [google/...]"
 		echo $(basename $0) "app [up/down]"
 		;;
 esac
