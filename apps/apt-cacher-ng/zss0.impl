@@ -81,7 +81,7 @@ case $1 in
 				"up")
 					docker run \
 					    --volume=${STORE}/docker/data:/var/cache/apt-cacher-ng \
-					    --publish=${HOST_PORT}:3142 \
+					    --publish=${PORT}:3142 \
 					    --restart=always \
 					    --detach=true \
 					    --name=${APPNAME} \
