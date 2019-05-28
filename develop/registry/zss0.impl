@@ -1,0 +1,145 @@
+#!/bin/bash
+# [Reference] https://docs.docker.com/registry/deploying/
+# [TODO] enable TLS
+# [TODO] support docker content trust
+
+# zss interface
+case $1 in
+	"app")
+		PROJECTNAME=docker-apps
+		APPNAME=registry
+		APPVERSION=0.1.0
+		;;
+	"config")
+		CONFIGKEYS="image ui_image registry_port ui_port"
+		declare -A CONFIG_DESCRIPTIONS
+		CONFIG_DESCRIPTIONS=( \
+			["image"]="The registry docker image to download." \
+			["ui_image"]="Web UI, authentication service and event recorder for private docker registry v2." \
+			["registry_port"]="The registry service port of host machine." \
+			["ui_port"]="The Web UI port for registry of host machine." \
+			)
+
+		DEFAULT_IMAGE=registry:2
+		DEFAULT_UI_IMAGE=hyper/docker-registry-web:v0.1.2
+		DEFAULT_REGISTRY_PORT=5000
+		DEFAULT_UI_PORT=8080
+		;;
+	"vars")
+		;;
+	"requirement")
+		echo - docker: $(which docker)
+		echo - jq: $(which jq)
+		echo - sponge: $(which sponge)
+		;;
+	"secret-create")
+		USERNAME=$(whoami)
+		PASSWORD=$(gpg --gen-random --armor 2 20 | head -c16)
+		echo ${USERNAME} | gpg -ear ${GPGKEY} -o ${SECRET}/username.enc
+		echo ${PASSWORD} | gpg -ear ${GPGKEY} -o ${SECRET}/password.enc
+		docker run --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
+		;;
+	"state-data-save")
+		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+		cd ${STORE}/docker
+		tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+		cd - &> /dev/null
+		;;
+	"state-secret-load-post")
+		;;
+	"state-data-load")
+		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+		then
+			mkdir -p ${STORE}/docker
+			cd ${STORE}/docker
+			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+			cd - &> /dev/null
+		fi
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	"command")
+		shift
+		case $1 in
+		"app")
+			shift
+			case $1 in
+				"up")
+					docker run \
+					    --volume=${SECRET}/htpasswd:/auth/htpasswd \
+					    --volume=${STORE}/docker/registry:/var/lib/registry \
+					    --env=REGISTRY_AUTH=htpasswd \
+					    --env="REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+					    --env=REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+					    --publish=${HOST_PORT}:5000 \
+					    --restart=always \
+					    --detach=true \
+					    --name=${APPNAME} \
+					    ${IMAGE}
+					;;
+				"down")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					;;
+			esac
+			;;
+		"proxy")
+			# pull-through cached mirroring
+			# https://stackoverflow.com/questions/30930847/how-to-set-up-a-docker-registry-acting-as-a-proxy
+			shift
+			case $1 in
+				"up")
+					docker run \
+					    --volume=${PWD}/config.yml:/etc/docker/registry/config.yml \
+					    --volume=${STORE}/docker/registry:/var/lib/registry \
+					    --env=REGISTRY_AUTH=none \
+					    --publish=${HOST_PORT}:5000 \
+					    --restart=always \
+					    --detach=true \
+					    --name=${APPNAME}-proxy \
+					    ${IMAGE}
+					[[ -e /etc/docker/daemon.json ]] || echo '{}' | sudo tee -a /etc/docker/daemon.json
+					jq '. + {"registry-mirrors": ["http://localhost:5000"]}' /etc/docker/daemon.json | \
+						sudo sponge /etc/docker/daemon.json
+					;;
+				"down")
+					docker stop ${APPNAME}-proxy
+					docker rm ${APPNAME}-proxy
+					jq 'del(."registry-mirrors")' /etc/docker/daemon.json | \
+						sudo sponge /etc/docker/daemon.json
+					;;
+			esac
+			;;
+		"ui")
+			shift
+			case $1 in
+				"up")
+					USERNAME=$(gpg -d ${SECRET}/username.enc)
+					PASSWORD=$(gpg -d ${SECRET}/password.enc)
+					BASICAUTH=$(echo -n ${USERNAME}:${PASSWORD} | base64)
+					docker run \
+					    --env=REGISTRY_URL=http://${APPNAME}:5000/v2 \
+					    --env=REGISTRY_NAME=localhost:5000 \
+					    --env=REGISTRY_AUTH_ENABLED=false \
+					    --env=REGISTRY_BASIC_AUTH="${BASICAUTH}" \
+					    --link=${APPNAME}:${APPNAME} \
+					    --publish=${HOST_UI_PORT}:8080 \
+					    --restart=always \
+					    --detach=true \
+					    --name=${APPNAME}-ui \
+					    ${UI_IMAGE}
+					;;
+				"down")
+					docker stop ${APPNAME}-ui
+					docker rm ${APPNAME}-ui
+					;;
+			esac
+			;;
+		esac
+		;;
+	#------------------------------------------------------------------------------
+	"usage")
+		echo $(basename $0) "[app/proxy/ui] [up/down]"
+		;;
+esac
+
