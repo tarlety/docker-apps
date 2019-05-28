@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# zss interface
+
+case $1 in
+	"app")
+		PROJECTNAME=docker-apps
+		APPNAME=apt-cacher-ng
+		APPVERSION=0.1.0
+		;;
+	"config")
+		CONFIGKEYS="image host port"
+		declare -A CONFIG_DESCRIPTIONS
+		CONFIG_DESCRIPTIONS=( \
+			["image"]="The docker image to download." \
+			["host"]="The Drone service hostname or ip of host machine." \
+			["port"]="The Drone service port of host machine." \
+			)
+
+		DEFAULT_IMAGE=apt-cacher:1
+		DEFAULT_HOST=localhost
+		DEFAULT_PORT=3142
+		;;
+	"vars")
+		;;
+	"requirement")
+		echo - docker: $(which docker)
+		;;
+	"secret-create")
+		;;
+	"state-data-save")
+		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+		cd ${STORE}/docker
+		tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+		cd - &> /dev/null
+		;;
+	"state-secret-load-post")
+		;;
+	"state-data-load")
+		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+		then
+			mkdir -p ${STORE}/docker
+			cd ${STORE}/docker
+			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+			cd - &> /dev/null
+		fi
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	"command")
+		shift
+		case $1 in
+		"make-docker")
+			docker build -t ${IMAGE} .
+			;;
+		"make-conf")
+			APTPROXYCONF=/etc/apt/apt.conf.d/01proxy
+			if [ ! -e ${APTPROXYCONF} ]
+			then
+				echo "Acquire::http { Proxy \"http://${HOST}:${HOST_PORT}\"; };" | sudo tee ${APTPROXYCONF}
+				echo "Acquire::https { Proxy \"false\"; };" | sudo tee -a ${APTPROXYCONF}
+			else
+				echo "The file ${APTPROXYCONF} already exists. Please check the content:"
+				cat ${APTPROXYCONF}
+			fi
+			;;
+		"trust")
+			shift
+			case $1 in
+				"google")
+					docker exec apt-cacher-ng \
+						apt install sudo curl gpg -y
+					docker exec -it apt-cacher-ng \
+						bash -c "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -"
+					;;
+			esac
+			;;
+		"app")
+			shift
+			case $1 in
+				"up")
+					docker run \
+					    --volume=${STORE}/docker/data:/var/cache/apt-cacher-ng \
+					    --publish=${HOST_PORT}:3142 \
+					    --restart=always \
+					    --detach=true \
+					    --name=${APPNAME} \
+					    ${IMAGE}
+					;;
+				"down")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					;;
+			esac
+			;;
+		esac
+		;;
+	#------------------------------------------------------------------------------
+	"usage")
+		echo $(basename $0) "[make-docker/make-conf]"
+		echo $(basename $0) "trust [google/...]"
+		echo $(basename $0) "app [up/down]"
+		;;
+esac
+
