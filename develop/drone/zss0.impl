@@ -1,0 +1,101 @@
+#!/bin/bash
+# [Reference] https://docs.drone.io/installation/gitea/single-machine/
+
+# backlogs:
+# - enable TLS
+
+# zss interface
+
+case $1 in
+	"app")
+		PROJECTNAME=docker-apps
+		APPNAME=drone
+		APPVERSION=0.1.0
+		;;
+	"config")
+		CONFIGKEYS="image host port gitea_dn gitea_ip"
+		declare -A CONFIG_DESCRIPTIONS
+		CONFIG_DESCRIPTIONS=( \
+			["image"]="The docker image to download." \
+			["host"]="The Drone server hostname or IP address." \
+			["port"]="The Drone service port." \
+			["gitea_dn"]="A string containing your Gitea server domain name." \
+			["gitea_ip"]="A string containing your Gitea server ip address." \
+			)
+
+		DEFAULT_IMAGE=drone/drone:1.1.0
+		DEFAULT_HOST=localhost
+		DEFAULT_PORT=8080
+		DEFAULT_GITEA_DN=gitea.minikube
+		DEFAULT_GITEA_IP=192.168.99.100
+		;;
+	"vars")
+		;;
+	"requirement")
+		echo - docker: $(which docker)
+		;;
+	"secret-create")
+		openssl s_client -connect ${GITEA_DN}:443 -showcerts < /dev/null 2>/dev/null \
+			| openssl x509 -outform PEM \
+			> ${SECRET}/gitea_server.crt
+		;;
+	"state-data-save")
+		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+		cd ${STORE}/docker
+		tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+		cd - &> /dev/null
+		;;
+	"state-secret-load-post")
+		;;
+	"state-data-load")
+		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+		then
+			mkdir -p ${STORE}/docker
+			cd ${STORE}/docker
+			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+			echo ${STATENAME} > ${CONFIG}/base_data
+			cd - &> /dev/null
+		fi
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	"command")
+		shift
+		case $1 in
+		"app")
+			shift
+			case $1 in
+				"up")
+					docker run \
+					    --volume=/var/run/docker.sock:/var/run/docker.sock \
+					    --volume=${STORE}/docker/data:/data \
+					    --volume=${SECRET}/gitea_server.crt:/usr/local/share/ca-certificates/gitea_server.crt \
+					    --env=DRONE_GITEA_SERVER=https://${GITEA_DN} \
+					    --env=DRONE_GIT_ALWAYS_AUTH=false \
+					    --env=DRONE_RUNNER_CAPACITY=2 \
+					    --env=DRONE_SERVER_HOST=${HOST}:${PORT} \
+					    --env=DRONE_SERVER_PROTO=http \
+					    --env=DRONE_TLS_AUTOCERT=false \
+					    --add-host ${GITEA_DN}:${GITEA_IP} \
+					    --publish=${PORT}:80 \
+					    --restart=always \
+					    --detach=true \
+					    --name=${APPNAME} \
+					    ${IMAGE}
+					docker exec ${APPNAME} apk add ca-certificates
+					docker exec ${APPNAME} update-ca-certificates
+					;;
+				"down")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					;;
+			esac
+			;;
+		esac
+		;;
+	#------------------------------------------------------------------------------
+	"usage")
+		echo $(basename $0) "app [up/down]"
+		;;
+esac
+

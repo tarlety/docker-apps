@@ -1,22 +1,19 @@
 #!/bin/bash
-# [Reference] https://docs.drone.io/installation/gitea/single-machine/
 
-# backlogs:
-# - enable TLS
+# 0.6.0 backlogs
+#   - derived: kube-apps-ctrl, docker-apps, node-adm, ceph-adm, kube-adm, zerus-test
 
-#------------------------------------------------------------------------------
+#==============================================================================
 # Copyright (c) 2019, tarlety@gmail.com
 #
-# Zerus Scripting Standard v0.4.0
+# Zerus Scripting Standard v0.5.8
 #
 # This standard defines script state management framework.
 # Following this framework, you can manage app states in a consistent way.
 #
 # Environments:
 #
-#    SECRET	Where to keep secrets.
-#    CONFIG	Where to keep configurations.
-#    STORE	Where to keep persistent data.
+#    ZSS_STORE	The store location to keep config/secret/state/data.
 #
 # Commands:
 #
@@ -28,135 +25,168 @@
 #                       The state can be saved or loaded.
 #                       Default state type is all states and default action is "list".
 #
+# Store Structure:
+#
+#   - store/projectname/appname/config
+#   - store/projectname/appname/secret
+#     - *.env
+#   - store/projectname/appname/data
+#     - (container volume)
+#   - store/projectname/appname/state
+#     - *-config.tgz
+#     - *-secret.tgz.enc
+#     - *-data.tgz.enc
+#   - store/projectname/appname/others...
+#
+# ZSS framework and AppImplementing interface (zss0.impl)
+#
+#    - app
+#    - config
+#    - vars
+#    - requirment
+#    - secret-create
+#    - state-data-save
+#    - state-secret-load-post
+#    - state-data-load
+#    - command
+#    - usage
+#
 # Scnario:
 #
-#    1. First, use "<scirptname> env" to confirm the state is clean.
-#    2. Then, use "<scriptname> config" to know how many configurations you have to set.
-#    3. Then, use "<scriptname> secret-create" to create secret files.
-#    4. Then, use "<scriptname> env" again to confirm the state is what you want.
+#    1. First, use "<app> env" to check current configurations.
+#    2. Then, use "<app> config" to set proper configurations based on runtime environments.
+#    3. Then, use "<app> secret-create" to create secret based on authentications.
+#    4. Then, use "<app> state" to save config and secret.
+#
+# Changelog:
+#
+#    v0.5.3:
+#       - introducing zss0.impl
+#
+#    v0.5.0:
+#       - new designed Store Structure
+#       - framework integrated: app-related sections are bounded by AppImplementing
+#       - certificate as secret files shall be encrypted
 
-#------------------------------------------------------------------------------
+#==============================================================================
 # Environments:
 
-VERSION=0.4.0
-APPNAME=drone
-SCRIPTNAME=docker-apps-${APPNAME}
-SECRET=${SECRET:-"${PWD}/.secret/${SCRIPTNAME}"}
-CONFIG=${CONFIG:-"${PWD}/.config/${SCRIPTNAME}"}
+ZSSVERSION=0.5.8
+# AppImplementing Section: app
+#------------------------------------------------------------------------------
+source ./zss0.impl app
+#------------------------------------------------------------------------------
+STORE=${ZSS_STORE:-"${HOME}/store"}/${PROJECTNAME}/${APPNAME}
+SECRET=${SECRET:-"${STORE}/secret"}
+CONFIG=${CONFIG:-"${STORE}/config"}
+DATA=${DATA:-"${STORE}/data"}
+STATE=${STATE:-"${STORE}/state"}
 
-DEFAULT_STORE=${STORE:-"${PWD}/.store/${SCRIPTNAME}"}
-DEFAULT_BASE_CONFIG=nop
-DEFAULT_BASE_SECRET=nop
-DEFAULT_BASE_DATA=nop
-DEFAULT_IMAGE=drone/drone:1.1.0
-DEFAULT_HOST=localhost
-DEFAULT_HOST_PORT=8080
-DEFAULT_GITEA_SERVER=gitea.minikube
-DEFAULT_GITEA_SERVER_IP=192.168.99.100
-DEFAULT_GPGKEYNAME=${USERNAME}
-
-STORE=`cat ${CONFIG}/store 2>/dev/null`
 BASE_CONFIG=`cat ${CONFIG}/base_config 2>/dev/null`
 BASE_SECRET=`cat ${CONFIG}/base_secret 2>/dev/null`
 BASE_DATA=`cat ${CONFIG}/base_data 2>/dev/null`
-IMAGE=`cat ${CONFIG}/image 2>/dev/null`
-HOST=`cat ${CONFIG}/host 2>/dev/null`
-HOST_PORT=`cat ${CONFIG}/host_port 2>/dev/null`
-GITEA_SERVER=`cat ${CONFIG}/gitea_server 2>/dev/null`
-GITEA_SERVER_IP=`cat ${CONFIG}/gitea_server_ip 2>/dev/null`
-GPGKEYNAME=`cat ${CONFIG}/gpgkeyname 2>/dev/null`
+SALT=${SECRET}/salt
 
+DEFAULT_GPGKEY=${USERNAME}
+
+# AppImplementing Section: configs
 #------------------------------------------------------------------------------
+source ./zss0.impl config
+#------------------------------------------------------------------------------
+
+for KEY in ${CONFIGKEYS}
+do
+	VARNAME=$(echo ${KEY} | tr '[:lower:]' '[:upper:]')
+	eval declare -A ${VARNAME}='$(cat ${CONFIG}/${KEY} 2>/dev/null)'
+done
+
+GPGKEY=`cat ${CONFIG}/gpgkey 2>/dev/null`
+
+eval export $(echo ${CONFIGKEYS} | tr '[:lower:]' '[:upper:]')
+
+# AppImplementing Section: vars
+#------------------------------------------------------------------------------
+source ./zss0.impl vars
+#------------------------------------------------------------------------------
+
+#==============================================================================
 # Commands
 
 case $1 in
 	"version")
-		echo ${VERSION}
+		echo ${ZSSVERSION} ${APPVERSION}
 		;;
 	"env")
 		echo =========================================================================
-		echo "## SCRIPT NAME: ${SCRIPTNAME}"
-		echo - VERSION: ${VERSION}
+		echo "## NAME: ${PROJECTNAME}/${APPNAME}"
+		echo - ZSSVERSION: ${ZSSVERSION}
+		echo - APPVERSION: ${APPVERSION}
 		echo - STORE: ${STORE}
-		echo - SECRET: ${SECRET} $(echo $(cat ${SALT} 2>/dev/null) $(cat ${SECRET}/* | sha256sum 2>/dev/null) | sha1sum | cut -c1-8)
-		echo - CONFIG: ${CONFIG}
-		echo - IMAGE: ${IMAGE}
-		echo - HOST: ${HOST}
-		echo - HOST_PORT: ${HOST_PORT}
-		echo - GITEA_SERVER: ${GITEA_SERVER}
-		echo - GITEA_SERVER_IP: ${GITEA_SERVER_IP}
-		echo - GPGKEYNAME: ${GPGKEYNAME} $(gpg -k ${GPGKEYNAME} 2>/dev/null | sed -n '2p' | xargs)
+		echo - SECRET: $(echo $(cat $SALT 2>/dev/null) $(cat ${SECRET}/* | sha256sum 2>/dev/null) | sha1sum | cut -c1-8)
+		for KEY in ${CONFIGKEYS}
+		do
+			KEY=$(echo ${KEY} | tr '[:lower:]' '[:upper:]')
+			if [ "$(eval echo \${!${KEY}[@]})" == "0" ]; then
+				eval echo - ${KEY}: \${${KEY}}
+			else
+				eval echo - ${KEY}: "{\${!${KEY}[@]}} -\> {\${${KEY}[@]}}"
+			fi
+		done
+		echo - GPGKEY: ${GPGKEY} $(gpg -k ${GPGKEY} 2>/dev/null | sed -n '2p' | xargs)
 		echo "## REQUIREMENT:"
-		echo - docker: $(which docker)
-		echo - tar: $(which tar)
+		# AppImplementing Section: requirement
+		#------------------------------------------------------------------------------
+		source ./zss0.impl requirement
+		#------------------------------------------------------------------------------
 		echo - gpg: $(which gpg)
+		echo - tar: $(which tar)
+		echo - colordiff: $(which colordiff)
 		echo =========================================================================
 		;;
 	"config")
 		shift
 		mkdir -p ${CONFIG}
 		case $1 in
-			"store")
+			"gpgkey")
 				shift
-				STORE=${1:-${DEFAULT_STORE}}
-				echo ${STORE} > ${CONFIG}/store
+				GPGKEY=${1:-${DEFAULT_GPGKEY}}
+				echo ${GPGKEY} >  ${CONFIG}/gpgkey
 				;;
-			"image")
-				shift
-				IMAGE=${1:-${DEFAULT_IMAGE}}
-				echo ${IMAGE} > ${CONFIG}/image
-				;;
-			"host")
-				shift
-				HOST=${1:-${DEFAULT_HOST}}
-				echo ${HOST} > ${CONFIG}/host
-				;;
-			"host_port")
-				shift
-				HOST_PORT=${1:-${DEFAULT_HOST_PORT}}
-				echo ${HOST_PORT} > ${CONFIG}/host_port
-				;;
-			"gitea_server")
-				shift
-				GITEA_SERVER=${1:-${DEFAULT_GITEA_SERVER}}
-				echo ${GITEA_SERVER} > ${CONFIG}/gitea_server
-				;;
-			"gitea_server_ip")
-				shift
-				GITEA_SERVER_IP=${1:-${DEFAULT_GITEA_SERVER_IP}}
-				echo ${GITEA_SERVER_IP} > ${CONFIG}/gitea_server_ip
-				;;
-			"gpg")
-				shift
-				GPGKEYNAME=${1:-${DEFAULT_GPGKEYNAME}}
-				echo ${GPGKEYNAME} >  ${CONFIG}/gpgkeyname
+			""|"help")
+				echo "Usage: $(basename $0) config <key> <value>"
+				echo ""
+				echo "Config keys:"
+				echo ""
+				for KEY in ${CONFIGKEYS}
+				do
+					VALUE_VAR=$(echo DEFAULT_${KEY} | tr '[:lower:]' '[:upper:]')
+					VALUE=${2:-$(eval echo \${${VALUE_VAR}})}
+					DESCRIPTION=${CONFIG_DESCRIPTIONS[${KEY}]}
+					echo " ${KEY}: ${DESCRIPTION}"
+					echo "	Ex: $(basename $0) config ${KEY} ${VALUE}"
+				done
+				echo " gpgkey: configure which gpg key to use."
+				echo "	Ex: $(basename $0) config gpgkey ${DEFAULT_GPGKEY}"
 				;;
 			*)
-				echo $(basename $0) config "<config_name>" "<config_value>"
-				echo ""
-				echo "config names:"
-				echo "	store		The local repository for state."
-				echo "			Ex: $(basename $0) config store ${DEFAULT_STORE}"
-				echo "	image		The docker image to download."
-				echo "			Ex: $(basename $0) config store ${DEFAULT_IMAGE}"
-				echo "	host		A string containing your Drone server hostname or IP address."
-				echo "			Ex: $(basename $0) config store ${DEFAULT_HOST}"
-				echo "	host_port	The host machine port."
-				echo "			Ex: $(basename $0) config store ${DEFAULT_HOST_PORT}"
-				echo "	gitea_server	A string containing your Gitea server url."
-				echo "			Ex: $(basename $0) config store ${DEFAULT_GITEA_SERVER}"
-				echo "	gitea_server_ip	A string containing your Gitea server ip address."
-				echo "			Ex: $(basename $0) config store ${DEFAULT_GITEA_SERVER_IP}"
-				echo "	gpg		configure which gpg key to use."
-				echo "			Ex: $(basename $0) config gpg ${DEFAULT_GPGKEYNAME}"
+				KEY=$1
+				VALUE_VAR=$(echo DEFAULT_${KEY} | tr '[:lower:]' '[:upper:]')
+				VALUE=${2:-$(eval echo \${${VALUE_VAR}})}
+				eval echo \'${VALUE}\' > ${CONFIG}/${KEY}
 				;;
 		esac
 		;;
 	"secret-create")
+		shift
 		mkdir -p ${SECRET}
-		openssl s_client -connect ${GITEA_SERVER}:443 -showcerts < /dev/null 2>/dev/null \
-			| openssl x509 -outform PEM \
-			> ${SECRET}/gitea_server.crt
+		chmod -R go-rwx ${SECRET}
+
+		# AppImplementing Section: secret-create
+		#------------------------------------------------------------------------------
+		source ./zss0.impl secret-create $*
+		#------------------------------------------------------------------------------
+
+		gpg --gen-random --armor 2 16 | base64 | cut -c1-16 > ${SALT}
 		;;
 	"state")
 		shift
@@ -178,21 +208,21 @@ case $1 in
 					echo ${STATENAME} > ${CONFIG}/base_secret
 					mv -f ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ${STORE}/state/${STATENAME}-bak-${APPNAME}-secret.tgz.enc &>/dev/null
 					cd ${SECRET}
-					tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc
+					tar -zc . | \
+						gpg -ear ${GPGKEY} -o ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc
 					cd - &> /dev/null
 				fi
 				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
 					echo ${STATENAME} > ${CONFIG}/base_data
-					mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
-					cd ${STORE}/docker
-					tar -zc . | gpg -ear ${GPGKEYNAME} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
-					cd - &> /dev/null
+					# AppImplementing Section: data save
+					#------------------------------------------------------------------------------
+					source ./zss0.impl state-data-save
+					#------------------------------------------------------------------------------
 				fi
 				;;
 			"load")
 				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
-					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz ]
-					then
+					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz ]; then
 						cd ${CONFIG}
 						tar -zxf ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz
 						cd - &> /dev/null
@@ -200,23 +230,23 @@ case $1 in
 					echo ${STATENAME} > ${CONFIG}/base_config
 				fi
 				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
-					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ]
-					then
+					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ]; then
 						cd ${SECRET}
 						gpg -d ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc | tar xz
 						cd - &> /dev/null
+						# AppImplementing Section: secret load post
+						#------------------------------------------------------------------------------
+						source $(dirname $0)/zss0.impl state-secret-load-post
+						#------------------------------------------------------------------------------
 					fi
 					echo ${STATENAME} > ${CONFIG}/base_secret
 				fi
 				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
-					if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
-					then
-						mkdir -p ${STORE}/docker
-						cd ${STORE}/docker
-						gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
-						echo ${STATENAME} > ${CONFIG}/base_data
-						cd - &> /dev/null
-					fi
+					# AppImplementing Section: data load
+					#------------------------------------------------------------------------------
+					source ./zss0.impl state-data-load
+					#------------------------------------------------------------------------------
+					echo ${STATENAME} > ${CONFIG}/base_data
 				fi
 				;;
 			"list"|*)
@@ -224,19 +254,19 @@ case $1 in
 				NC='\033[0m'
 				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
 					echo -e "${HC}## CONFIG: ${BASE_CONFIG}${NC}"
-					cd ${STORE}/state
+					cd ${STATE}
 					ls *-${APPNAME}-config.tgz 2>/dev/null | sed "s/\(.*\)-${APPNAME}-config.tgz/           \1/"
 					cd - &>/dev/null
 				fi
 				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
 					echo -e "${HC}## SECRET: ${BASE_SECRET}${NC}"
-					cd ${STORE}/state
+					cd ${STATE}
 					ls *-${APPNAME}-secret.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-secret.tgz.enc/           \1/"
 					cd - &>/dev/null
 				fi
 				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
 					echo -e "${HC}## DATA  : ${BASE_DATA}${NC}"
-					cd ${STORE}/data
+					cd ${STATE}
 					ls *-${APPNAME}-data.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-data.tgz.enc/           \1/"
 					cd - &>/dev/null
 				fi
@@ -246,42 +276,25 @@ case $1 in
 				;;
 		esac
 		;;
-	"app")
-		shift
-		case $1 in
-			"up")
-				docker run \
-				    --volume=/var/run/docker.sock:/var/run/docker.sock \
-				    --volume=${STORE}/docker/data:/data \
-				    --volume=${SECRET}/gitea_server.crt:/usr/local/share/ca-certificates/gitea_server.crt \
-				    --env=DRONE_GITEA_SERVER=https://${GITEA_SERVER} \
-				    --env=DRONE_GIT_ALWAYS_AUTH=false \
-				    --env=DRONE_RUNNER_CAPACITY=2 \
-				    --env=DRONE_SERVER_HOST=${HOST}:${HOST_PORT} \
-				    --env=DRONE_SERVER_PROTO=http \
-				    --env=DRONE_TLS_AUTOCERT=false \
-				    --add-host ${GITEA_SERVER}:${GITEA_SERVER_IP} \
-				    --publish=${HOST_PORT}:80 \
-                                    --restart=always \
-                                    --detach=true \
-                                    --name=${APPNAME} \
-                                    ${IMAGE}
-				docker exec ${APPNAME} apk add ca-certificates
-				docker exec ${APPNAME} update-ca-certificates
-				;;
-			"down")
-				docker stop ${APPNAME}
-				docker rm ${APPNAME}
-				;;
-		esac
-		;;
-	*)
+	"")
 		echo $(basename $0) version
 		echo $(basename $0) env
 		echo $(basename $0) config ...
 		echo $(basename $0) secret-create
 		echo $(basename $0) "state [list/save/load] [config/secret/data] [state_name, ex: date-stage-env]"
-		echo $(basename $0) "app [up/down]"
+		# AppImplementing Section: usage
+		#------------------------------------------------------------------------------
+		source ./zss0.impl usage
+		#------------------------------------------------------------------------------
 		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	*)
+		COMMAND=$1
+		shift
+		ARGS=$*
+		source ./zss0.impl command ${COMMAND} ${ARGS}
+		;;
+	#------------------------------------------------------------------------------
 esac
 
