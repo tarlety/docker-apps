@@ -1,0 +1,71 @@
+#!/bin/bash
+# [Reference] https://docs.drone.io/installation/gitea/single-machine/
+
+# backlogs:
+# - enable TLS
+
+# zss interface
+
+case $1 in
+	"app")
+		PROJECTNAME=docker-apps
+		APPNAME=openvas
+		APPVERSION=0.1.0
+		;;
+	"config")
+		CONFIGKEYS="image port"
+		declare -A CONFIG_DESCRIPTIONS
+		CONFIG_DESCRIPTIONS=( \
+			["image"]="The docker image to download." \
+			["port"]="The service port of localhost." \
+			)
+
+		DEFAULT_IMAGE=mikesplain/openvas:9
+		DEFAULT_PORT=443
+		;;
+	"vars")
+		;;
+	"requirement")
+		echo - docker: $(which docker)
+		;;
+	"secret-create")
+		;;
+	"state-data-save")
+		;;
+	"state-secret-load-post")
+		;;
+	"state-data-load")
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	"command")
+		shift
+		case $1 in
+		"app")
+			shift
+			case $1 in
+				"up")
+					docker run -d -p ${PORT}:443 --name ${APPNAME} ${IMAGE}
+					;;
+				"down")
+					docker stop ${APPNAME}
+					;;
+				"clean")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					;;
+				"cleanclean")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					docker rmi ${IMAGE}
+					;;
+			esac
+			;;
+		esac
+		;;
+	#------------------------------------------------------------------------------
+	"usage")
+		echo $(basename $0) "app [up/down/clean/cleanclean]"
+		;;
+esac
+

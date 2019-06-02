@@ -1,0 +1,317 @@
+#!/bin/bash
+
+# 0.6.0 backlogs
+#   - derived: kube-apps-ctrl, docker-apps, node-adm, ceph-adm, kube-adm, zerus-test
+
+#==============================================================================
+# Copyright (c) 2019, tarlety@gmail.com
+#
+# Zerus Scripting Standard v0.5.13
+#
+# This standard defines script state management framework.
+# Following this framework, you can manage app states in a consistent way.
+#
+# Environments:
+#
+#    ZSS_STORE	The store location to keep config/secret/state/data.
+#
+# Commands:
+#
+#    env                Display all runtime environments, configurables, and required tools.
+#    config ...         Set configurations by this command.
+#    secret-create      Create new secrets.
+#    state [config/secret/data] [list/save/load] [state-name]
+#                       App state type includes config, secret, and data.
+#                       The state can be saved or loaded.
+#                       Default state type is all states and default action is "list".
+#
+# Store Structure:
+#
+#   - store/projectname/appname/config
+#   - store/projectname/appname/secret
+#     - *.env
+#   - store/projectname/appname/data
+#     - (container volume)
+#   - store/projectname/appname/state
+#     - *-config.tgz
+#     - *-secret.tgz.enc
+#     - *-data.tgz.enc
+#   - store/projectname/appname/others...
+#
+# ZSS framework and AppImplementing interface (zss0.impl)
+#
+#    - app
+#    - config
+#    - vars
+#    - requirment
+#    - secret-create
+#    - state-data-save
+#    - state-secret-load-post
+#    - state-data-load
+#    - command
+#    - usage
+#
+# Scnario:
+#
+#    1. First, use "<app> env" to check current configurations.
+#    2. Then, use "<app> config" to set proper configurations based on runtime environments.
+#    3. Then, use "<app> secret-create" to create secret based on authentications.
+#    4. Then, use "<app> state" to save config and secret.
+#
+# Changelog:
+#
+#    v0.5.13:
+#       - latest version checking
+#       - new command 'update' to fetch latest version
+#
+#    v0.5.3:
+#       - introducing zss0.impl
+#
+#    v0.5.0:
+#       - new designed Store Structure
+#       - framework integrated: app-related sections are bounded by AppImplementing
+#       - certificate as secret files shall be encrypted
+
+#==============================================================================
+# Auto Update:
+
+ZSSVERSION=0.5.13
+REMOTE_RELEASE=https://raw.githubusercontent.com/tarlety/kube-apps-platform/master/zss0
+diff <(curl https://raw.githubusercontent.com/tarlety/kube-apps-platform/master/zss0 2>/dev/null) zss0 2>/dev/null 1>/dev/null || echo \
+"*************************************************************************
+Newer ZSS Version Available. Type '$0 update' to get the latest ZSS.
+*************************************************************************"
+
+#==============================================================================
+# Environments:
+
+# AppImplementing Section: app
+#------------------------------------------------------------------------------
+source ./zss0.impl app
+#------------------------------------------------------------------------------
+STORE=${ZSS_STORE:-"${HOME}/store"}/${PROJECTNAME}/${APPNAME}
+SECRET=${SECRET:-"${STORE}/secret"}
+CONFIG=${CONFIG:-"${STORE}/config"}
+DATA=${DATA:-"${STORE}/data"}
+STATE=${STATE:-"${STORE}/state"}
+
+BASE_CONFIG=`cat ${CONFIG}/base_config 2>/dev/null`
+BASE_SECRET=`cat ${CONFIG}/base_secret 2>/dev/null`
+BASE_DATA=`cat ${CONFIG}/base_data 2>/dev/null`
+SALT=${SECRET}/salt
+
+DEFAULT_GPGKEY=${USERNAME}
+
+# AppImplementing Section: configs
+#------------------------------------------------------------------------------
+source ./zss0.impl config
+#------------------------------------------------------------------------------
+
+for KEY in ${CONFIGKEYS}
+do
+	VARNAME=$(echo ${KEY} | tr '[:lower:]' '[:upper:]')
+	eval declare -A ${VARNAME}='$(cat ${CONFIG}/${KEY} 2>/dev/null)'
+done
+
+GPGKEY=`cat ${CONFIG}/gpgkey 2>/dev/null`
+
+eval export $(echo ${CONFIGKEYS} | tr '[:lower:]' '[:upper:]')
+
+# AppImplementing Section: vars
+#------------------------------------------------------------------------------
+source ./zss0.impl vars
+#------------------------------------------------------------------------------
+
+#==============================================================================
+# Commands
+
+case $1 in
+	"version")
+		echo ${ZSSVERSION} ${APPVERSION}
+		;;
+	"update")
+		(wget ${REMOTE_RELEASE} -O $0 && chmod +x $0)&
+		;;
+	"env")
+		echo =========================================================================
+		echo "## NAME: ${PROJECTNAME}/${APPNAME}"
+		echo - ZSSVERSION: ${ZSSVERSION}
+		echo - APPVERSION: ${APPVERSION}
+		echo - STORE: ${STORE}
+		echo - SECRET: $(echo $(cat $SALT 2>/dev/null) $(cat ${SECRET}/* | sha256sum 2>/dev/null) | sha1sum | cut -c1-8)
+		for KEY in ${CONFIGKEYS}
+		do
+			KEY=$(echo ${KEY} | tr '[:lower:]' '[:upper:]')
+			if [ "$(eval echo \${!${KEY}[@]})" == "0" ]; then
+				eval echo - ${KEY}: \${${KEY}}
+			else
+				eval echo - ${KEY}: "{\${!${KEY}[@]}} -\> {\${${KEY}[@]}}"
+			fi
+		done
+		echo - GPGKEY: ${GPGKEY} $(gpg -k ${GPGKEY} 2>/dev/null | sed -n '2p' | xargs)
+		echo "## REQUIREMENT:"
+		# AppImplementing Section: requirement
+		#------------------------------------------------------------------------------
+		source ./zss0.impl requirement
+		#------------------------------------------------------------------------------
+		echo - gpg: $(which gpg)
+		echo - tar: $(which tar)
+		echo - colordiff: $(which colordiff)
+		echo =========================================================================
+		;;
+	"config")
+		shift
+		mkdir -p ${CONFIG}
+		case $1 in
+			"gpgkey")
+				shift
+				GPGKEY=${1:-${DEFAULT_GPGKEY}}
+				echo ${GPGKEY} >  ${CONFIG}/gpgkey
+				;;
+			""|"help")
+				echo "Usage: $(basename $0) config <key> <value>"
+				echo ""
+				echo "Config keys:"
+				echo ""
+				for KEY in ${CONFIGKEYS}
+				do
+					VALUE_VAR=$(echo DEFAULT_${KEY} | tr '[:lower:]' '[:upper:]')
+					VALUE=${2:-$(eval echo \${${VALUE_VAR}})}
+					DESCRIPTION=${CONFIG_DESCRIPTIONS[${KEY}]}
+					echo " ${KEY}: ${DESCRIPTION}"
+					echo "	Ex: $(basename $0) config ${KEY} ${VALUE}"
+				done
+				echo " gpgkey: configure which gpg key to use."
+				echo "	Ex: $(basename $0) config gpgkey ${DEFAULT_GPGKEY}"
+				;;
+			*)
+				KEY=$1
+				VALUE_VAR=$(echo DEFAULT_${KEY} | tr '[:lower:]' '[:upper:]')
+				VALUE=${2:-$(eval echo \${${VALUE_VAR}})}
+				eval echo \'${VALUE}\' > ${CONFIG}/${KEY}
+				;;
+		esac
+		;;
+	"secret-create")
+		shift
+		mkdir -p ${SECRET}
+
+		# AppImplementing Section: secret-create
+		#------------------------------------------------------------------------------
+		source ./zss0.impl secret-create $*
+		#------------------------------------------------------------------------------
+
+		chmod -R go-rwx ${SECRET}
+		gpg --gen-random --armor 2 16 | base64 | cut -c1-16 > ${SALT}
+		;;
+	"state")
+		shift
+		ACTION=$1
+		TYPE=$2
+		STATENAME=$3
+
+		mkdir -p ${STORE}/state ${STORE}/data
+		case ${ACTION} in
+			"save")
+				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
+					echo ${STATENAME} > ${CONFIG}/base_config
+					$0 env > ${CONFIG}/env
+					cd ${CONFIG}
+					tar -zcf ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz .
+					cd - &> /dev/null
+				fi
+				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
+					echo ${STATENAME} > ${CONFIG}/base_secret
+					mv -f ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ${STORE}/state/${STATENAME}-bak-${APPNAME}-secret.tgz.enc &>/dev/null
+					cd ${SECRET}
+					tar -zc . | \
+						gpg -ear ${GPGKEY} -o ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc
+					cd - &> /dev/null
+				fi
+				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
+					echo ${STATENAME} > ${CONFIG}/base_data
+					# AppImplementing Section: data save
+					#------------------------------------------------------------------------------
+					source ./zss0.impl state-data-save
+					#------------------------------------------------------------------------------
+				fi
+				;;
+			"load")
+				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
+					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz ]; then
+						cd ${CONFIG}
+						tar -zxf ${STORE}/state/${STATENAME}-${APPNAME}-config.tgz
+						cd - &> /dev/null
+					fi
+					echo ${STATENAME} > ${CONFIG}/base_config
+				fi
+				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
+					if [ -e ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc ]; then
+						cd ${SECRET}
+						gpg -d ${STORE}/state/${STATENAME}-${APPNAME}-secret.tgz.enc | tar xz
+						cd - &> /dev/null
+						# AppImplementing Section: secret load post
+						#------------------------------------------------------------------------------
+						source $(dirname $0)/zss0.impl state-secret-load-post
+						#------------------------------------------------------------------------------
+					fi
+					echo ${STATENAME} > ${CONFIG}/base_secret
+				fi
+				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
+					# AppImplementing Section: data load
+					#------------------------------------------------------------------------------
+					source ./zss0.impl state-data-load
+					#------------------------------------------------------------------------------
+					echo ${STATENAME} > ${CONFIG}/base_data
+				fi
+				;;
+			"list"|*)
+				HC='\033[0;93m'
+				NC='\033[0m'
+				if [ "${TYPE}" == "config" -o "${TYPE}" == "" ]; then
+					echo -e "${HC}## CONFIG: ${BASE_CONFIG}${NC}"
+					cd ${STATE}
+					ls *-${APPNAME}-config.tgz 2>/dev/null | sed "s/\(.*\)-${APPNAME}-config.tgz/           \1/"
+					cd - &>/dev/null
+				fi
+				if [ "${TYPE}" == "secret" -o "${TYPE}" == "" ]; then
+					echo -e "${HC}## SECRET: ${BASE_SECRET}${NC}"
+					cd ${STATE}
+					ls *-${APPNAME}-secret.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-secret.tgz.enc/           \1/"
+					cd - &>/dev/null
+				fi
+				if [ "${TYPE}" == "data" -o "${TYPE}" == "" ]; then
+					echo -e "${HC}## DATA  : ${BASE_DATA}${NC}"
+					cd ${STATE}
+					ls *-${APPNAME}-data.tgz.enc 2>/dev/null | sed "s/\(.*\)-${APPNAME}-data.tgz.enc/           \1/"
+					cd - &>/dev/null
+				fi
+
+				echo -e "${HC}## ENV   : STATE                                              | CURRENT${NC}"
+				$0 env | colordiff -y --suppress-common-lines ${CONFIG}/env -
+				;;
+		esac
+		;;
+	"")
+		echo $(basename $0) version
+		echo $(basename $0) update
+		echo $(basename $0) env
+		echo $(basename $0) config ...
+		echo $(basename $0) secret-create
+		echo $(basename $0) "state [list/save/load] [config/secret/data] [state_name, ex: date-stage-env]"
+		# AppImplementing Section: usage
+		#------------------------------------------------------------------------------
+		source ./zss0.impl usage
+		#------------------------------------------------------------------------------
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	*)
+		COMMAND=$1
+		shift
+		ARGS=$*
+		source ./zss0.impl command ${COMMAND} ${ARGS}
+		;;
+	#------------------------------------------------------------------------------
+esac
+
