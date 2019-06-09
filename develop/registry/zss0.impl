@@ -26,6 +26,10 @@ case $1 in
 		DEFAULT_UI_PORT=8080
 		;;
 	"vars")
+		EXTFILE=${SECRET}/v3.ext
+		KEY=${SECRET}/domain.key
+		CRT=${SECRET}/domain.crt
+		REQ=${SECRET}/domain.req
 		;;
 	"requirement")
 		echo - docker: $(which docker)
@@ -33,11 +37,23 @@ case $1 in
 		echo - sponge: $(which sponge)
 		;;
 	"secret-create")
+		rm -f ${SECRET}/username.enc ${SECRET}/password.enc
 		USERNAME=$(whoami)
 		PASSWORD=$(gpg --gen-random --armor 2 20 | head -c16)
 		echo ${USERNAME} | gpg -ear ${GPGKEY} -o ${SECRET}/username.enc
 		echo ${PASSWORD} | gpg -ear ${GPGKEY} -o ${SECRET}/password.enc
-		docker run --entrypoint htpasswd ${IMAGE} -Bbn ${USERNAME} ${PASSWORD} > ${SECRET}/htpasswd
+
+		rm -f ${KEY}.enc ${REQ}.enc ${CRT}.enc
+		DOMAIN=registry
+		SUBJECT=/C=CN/ST=State/L=Location/O=Org/OU=Unit/CN=${DOMAIN}
+		./v3.ext.template ${DOMAIN} > ${EXTFILE}
+		openssl genrsa -out ${KEY}
+		openssl req -sha512 -new -key ${KEY} -out ${REQ} -subj ${SUBJECT}
+		openssl x509 -sha512 -req -days 365 -in ${REQ} -signkey ${KEY} -out ${CRT} -extfile ${EXTFILE}
+		gpg -ear ${GPGKEY} -o ${KEY}.enc ${KEY}
+		gpg -ear ${GPGKEY} -o ${REQ}.enc ${REQ}
+		gpg -ear ${GPGKEY} -o ${CRT}.enc ${CRT}
+		rm ${KEY} ${REQ} ${CRT}
 		;;
 	"state-data-save")
 		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
@@ -60,11 +76,19 @@ case $1 in
 	#------------------------------------------------------------------------------
 	"command")
 		shift
+		mkdir -p ${STORE}/docker/secrets/htpasswd ${STORE}/docker/secrets/certs
 		case $1 in
 		"app")
 			shift
 			case $1 in
 				"up")
+					USERNAME=$(gpg -d ${SECRET}/username.enc)
+					PASSWORD=$(gpg -d ${SECRET}/password.enc)
+					docker run --entrypoint htpasswd ${IMAGE} \
+						-Bbn ${USERNAME} ${PASSWORD} \
+						> ${STORE}/docker/secrets/htpasswd/htpasswd
+					gpg -d ${KEY}.enc > ${STORE}/docker/secrets/certs/domain.key
+					gpg -d ${CRT}.enc > ${STORE}/docker/secrets/certs/domain.crt
 					docker run \
 					    --volume=${SECRET}/htpasswd:/auth/htpasswd \
 					    --volume=${STORE}/docker/registry:/var/lib/registry \
@@ -89,22 +113,27 @@ case $1 in
 			shift
 			case $1 in
 				"up")
+					gpg -d ${KEY}.enc > ${STORE}/docker/secrets/certs/domain.key
+					gpg -d ${CRT}.enc > ${STORE}/docker/secrets/certs/domain.crt
 					docker run \
-					    --volume=${PWD}/config.yml:/etc/docker/registry/config.yml \
-					    --volume=${STORE}/docker/registry:/var/lib/registry \
+					    --volume=${PWD}/config.yml:/etc/docker/registry/config.yml:ro \
+					    --volume=${STORE}/docker/registry:/var/lib/registry:ro \
+					    --volume=${STORE}/docker/secrets:/secrets:ro \
+					    --env=REGISTRY_HTTP_TLS_CERTIFICATE=/secrets/certs/domain.crt \
+					    --env=REGISTRY_HTTP_TLS_KEY=/secrets/certs/domain.key \
 					    --env=REGISTRY_AUTH=none \
 					    --publish=${REGISTRY_PORT}:5000 \
 					    --restart=always \
 					    --detach=true \
-					    --name=${APPNAME}-proxy \
+					    --name=${APPNAME} \
 					    ${IMAGE}
 					[[ -e /etc/docker/daemon.json ]] || echo '{}' | sudo tee -a /etc/docker/daemon.json
 					jq '. + {"registry-mirrors": ["http://localhost:5000"]}' /etc/docker/daemon.json | \
 						sudo sponge /etc/docker/daemon.json
 					;;
 				"down")
-					docker stop ${APPNAME}-proxy
-					docker rm ${APPNAME}-proxy
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
 					jq 'del(."registry-mirrors")' /etc/docker/daemon.json | \
 						sudo sponge /etc/docker/daemon.json
 					;;
@@ -118,7 +147,8 @@ case $1 in
 					PASSWORD=$(gpg -d ${SECRET}/password.enc)
 					BASICAUTH=$(echo -n ${USERNAME}:${PASSWORD} | base64)
 					docker run \
-					    --env=REGISTRY_URL=http://${APPNAME}:5000/v2 \
+					    --volume=${STORE}/docker/secrets/certs/domain.crt:/usr/local/share/ca-certificates/domain.crt:ro \
+					    --env=REGISTRY_URL=https://${APPNAME}:5000/v2 \
 					    --env=REGISTRY_NAME=localhost:5000 \
 					    --env=REGISTRY_AUTH_ENABLED=false \
 					    --env=REGISTRY_BASIC_AUTH="${BASICAUTH}" \
@@ -128,6 +158,7 @@ case $1 in
 					    --detach=true \
 					    --name=${APPNAME}-ui \
 					    ${UI_IMAGE}
+					docker exec ${APPNAME}-ui update-ca-certificates
 					;;
 				"down")
 					docker stop ${APPNAME}-ui
@@ -136,6 +167,7 @@ case $1 in
 			esac
 			;;
 		esac
+		chmod -R og-rwx ${STORE}/docker/secrets
 		;;
 	#------------------------------------------------------------------------------
 	"usage")
