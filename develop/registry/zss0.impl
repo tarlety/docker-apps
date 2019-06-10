@@ -1,6 +1,5 @@
 #!/bin/bash
 # [Reference] https://docs.docker.com/registry/deploying/
-# [TODO] enable TLS
 # [TODO] support docker content trust
 
 # zss interface
@@ -8,7 +7,7 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=registry
-		APPVERSION=0.1.0
+		APPVERSION=0.1.1
 		;;
 	"config")
 		CONFIGKEYS="image ui_image registry_port ui_port"
@@ -116,8 +115,8 @@ case $1 in
 					gpg -d ${KEY}.enc > ${STORE}/docker/secrets/certs/domain.key
 					gpg -d ${CRT}.enc > ${STORE}/docker/secrets/certs/domain.crt
 					docker run \
+					    --volume=${STORE}/docker/registry:/var/lib/registry \
 					    --volume=${PWD}/config.yml:/etc/docker/registry/config.yml:ro \
-					    --volume=${STORE}/docker/registry:/var/lib/registry:ro \
 					    --volume=${STORE}/docker/secrets:/secrets:ro \
 					    --env=REGISTRY_HTTP_TLS_CERTIFICATE=/secrets/certs/domain.crt \
 					    --env=REGISTRY_HTTP_TLS_KEY=/secrets/certs/domain.key \
@@ -128,8 +127,11 @@ case $1 in
 					    --name=${APPNAME} \
 					    ${IMAGE}
 					[[ -e /etc/docker/daemon.json ]] || echo '{}' | sudo tee -a /etc/docker/daemon.json
-					jq '. + {"registry-mirrors": ["http://localhost:5000"]}' /etc/docker/daemon.json | \
+					jq '. + {"registry-mirrors": ["https://localhost:5000"]}' /etc/docker/daemon.json | \
 						sudo sponge /etc/docker/daemon.json
+					sudo cp ${STORE}/docker/secrets/certs/domain.crt /usr/local/share/ca-certificates/registry:5000.crt
+					sudo update-ca-certificates
+					sudo systemctl restart docker ;
 					;;
 				"down")
 					docker stop ${APPNAME}
