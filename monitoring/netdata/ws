@@ -6,8 +6,8 @@ STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
 STORE=${STORE:-${STOREBASE}/${IMAGE}}
 
-TGBOTTOKEN=`cat ${SECRET}/.netdata/tg-bot-token`
-TGCHATID=`cat ${SECRET}/.netdata/tg-chatid`
+TGBOTTOKEN=${TGBOTTOKEN:-`cat ${SECRET}/.netdata/tg-bot-token`}
+TGCHATID=${TGCHATID:-`cat ${SECRET}/.netdata/tg-chatid`}
 
 case $1 in
 	"secret")
