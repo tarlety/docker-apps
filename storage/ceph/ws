@@ -63,6 +63,14 @@ case $1 in
 			fi
 		done
 		;;
+	"osdrm")
+		shift
+		ID=$1
+		docker exec mon ceph osd out $ID
+		docker exec mon ceph osd crush remove osd.$ID
+		docker exec mon ceph osd rm $ID
+		docker exec mon ceph auth del osd.$ID
+		;;
 	"osdclean")
 		shift
 		for DEV in $*
@@ -75,11 +83,6 @@ case $1 in
 			fi
 			echo "clean ${OSDNAME}"
 
-			# TODO: it's broken now; fix it by getting id from container
-			#docker exec ${OSDNAME} ceph osd out $ID
-			#docker exec ${OSDNAME} ceph osd crush remove osd.$ID
-			#docker exec ${OSDNAME} ceph osd rm $ID
-			#docker exec ${OSDNAME} ceph auth del osd.$ID
 			docker stop ${OSDNAME}
 			docker rm ${OSDNAME}
 		done
@@ -169,7 +172,8 @@ case $1 in
 		echo $(basename $0) mon hostip network
 		echo $(basename $0) mgr
 		echo $(basename $0) osds osdp dev1 dev2 ...
-		echo $(basename $0) osdclean osdp/dev_name osd.id
+		echo $(basename $0) osdrm osd.id1 osd.id2 ...
+		echo $(basename $0) osdclean osdp/dev1 dev2 ...
 		echo $(basename $0) zap dev1 dev2 ...
 		echo $(basename $0) mds pgnum
 		echo $(basename $0) mdsclean
