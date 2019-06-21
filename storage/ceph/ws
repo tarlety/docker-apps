@@ -189,6 +189,7 @@ case $1 in
 		echo $(basename $0) prepare
 		echo $(basename $0) mon hostip network
 		echo $(basename $0) monreset
+		echo $(basename $0) reconfig-mons mons-string
 		echo $(basename $0) mgr
 		echo $(basename $0) mgrreset
 		echo $(basename $0) osds osdp dev1 dev2 ...
