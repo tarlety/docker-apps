@@ -22,6 +22,9 @@ case $1 in
 			--name mon \
 			${DOCKERIMAGE} mon
 		;;
+	"monreset")
+		rm -rf ${STORE}/var/lib/ceph/mon/*
+		;;
 	"mgr")
 		docker run -d --net=host \
 			--restart=always \
@@ -30,6 +33,9 @@ case $1 in
 			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
 			--name mgr \
 			${DOCKERIMAGE} mgr
+		;;
+	"mgrreset")
+		rm -rf ${STORE}/var/lib/ceph/mgr/*
 		;;
 	"osds")
 		shift
@@ -62,6 +68,11 @@ case $1 in
 					${DOCKERIMAGE} osd_ceph_disk
 			fi
 		done
+		;;
+	"osdreset")
+		shift
+		ID=$1
+		rm -rf ${STORE}/var/lib/ceph/osd/ceph-$ID
 		;;
 	"osdrm")
 		shift
@@ -111,10 +122,8 @@ case $1 in
 			--name mds \
 			${DOCKERIMAGE} mds
 		;;
-	"mdsrm")
-		shift
-		docker stop mds
-		docker rm mds
+	"mdsreset")
+		rm -rf ${STORE}/var/lib/ceph/mds/*
 		;;
 	"mdsclean")
 		docker exec mon ceph tell mon.\* injectargs '--mon-allow-pool-delete=true'
@@ -173,14 +182,18 @@ case $1 in
 	*)
 		echo $(basename $0) prepare
 		echo $(basename $0) mon hostip network
+		echo $(basename $0) monreset
 		echo $(basename $0) mgr
+		echo $(basename $0) mgrreset
 		echo $(basename $0) osds osdp dev1 dev2 ...
-		echo $(basename $0) osdrm osd.id1 osd.id2 ...
+		echo $(basename $0) osdrm osd.id
 		echo $(basename $0) osdclean osdp/dev1 dev2 ...
+		echo $(basename $0) osdreset osd.id
 		echo $(basename $0) zap dev1 dev2 ...
 		echo $(basename $0) mds pgnum
 		echo $(basename $0) mdsclean
 		echo $(basename $0) mdsmount mdshost
+		echo $(basename $0) mdsreset
 		echo $(basename $0) clean
 		echo $(basename $0) cleanclean
 		echo $(basename $0) p-up ...
