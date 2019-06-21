@@ -23,7 +23,7 @@ case $1 in
 			${DOCKERIMAGE} mon
 		;;
 	"monreset")
-		rm -rf ${STORE}/var/lib/ceph/mon/*
+		sudo rm -rf ${STORE}/var/lib/ceph/mon/*
 		;;
 	"mgr")
 		docker run -d --net=host \
@@ -35,7 +35,7 @@ case $1 in
 			${DOCKERIMAGE} mgr
 		;;
 	"mgrreset")
-		rm -rf ${STORE}/var/lib/ceph/mgr/*
+		sudo rm -rf ${STORE}/var/lib/ceph/mgr/*
 		;;
 	"osds")
 		shift
@@ -72,7 +72,7 @@ case $1 in
 	"osdreset")
 		shift
 		ID=$1
-		rm -rf ${STORE}/var/lib/ceph/osd/ceph-$ID
+		sudo rm -rf ${STORE}/var/lib/ceph/osd/ceph-$ID
 		;;
 	"osdrm")
 		shift
@@ -123,7 +123,7 @@ case $1 in
 			${DOCKERIMAGE} mds
 		;;
 	"mdsreset")
-		rm -rf ${STORE}/var/lib/ceph/mds/*
+		sudo rm -rf ${STORE}/var/lib/ceph/mds/*
 		;;
 	"mdsclean")
 		docker exec mon ceph tell mon.\* injectargs '--mon-allow-pool-delete=true'
