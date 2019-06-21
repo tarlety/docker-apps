@@ -122,8 +122,6 @@ case $1 in
 		docker exec mon ceph fs rm cephfs --yes-i-really-mean-it
 		docker exec mon ceph osd pool delete cephfs_data cephfs_data --yes-i-really-really-mean-it
 		docker exec mon ceph osd pool delete cephfs_metadata cephfs_metadata --yes-i-really-really-mean-it
-		docker stop mds
-		docker rm mds
 		;;
 	"mdsmount")
 		shift
