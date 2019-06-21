@@ -28,8 +28,9 @@ case $1 in
 	"reconfig-mons")
 		shift
 		MONS=$1
+		MONSIP=$2
 		sudo sed -i -e "s/^mon initial members = .*/mon initial members = ${MONS}/" ${STORE}/etc/ceph/ceph.conf
-		sudo sed -i -e "s/^mon host = .*/mon host = ${MONS}/" ${STORE}/etc/ceph/ceph.conf
+		sudo sed -i -e "s/^mon host = .*/mon host = ${MONSIP}/" ${STORE}/etc/ceph/ceph.conf
 		;;
 	"mgr")
 		docker run -d --net=host \
