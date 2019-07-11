@@ -15,8 +15,12 @@ case $1 in
 		docker run -d --net=host \
 			--restart=always \
 			-v ${STORE}/etc/ceph:/etc/ceph \
-			-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
 			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+			-v ${STORE}/var/lib/ceph/mon:/var/lib/ceph/mon \
+			-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+			-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+			-v ${STORE}/var/lib/ceph/bootstrap-rdb:/var/lib/ceph/bootstrap-rdb \
+			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 			-e MON_IP=$HOSTIP \
 			-e CEPH_PUBLIC_NETWORK=$NETWORK \
 			--name mon \
@@ -36,8 +40,12 @@ case $1 in
 		docker run -d --net=host \
 			--restart=always \
 			-v ${STORE}/etc/ceph:/etc/ceph \
-			-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
 			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+			-v ${STORE}/var/lib/ceph/mgr:/var/lib/ceph/mgr \
+			-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+			-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+			-v ${STORE}/var/lib/ceph/bootstrap-rdb:/var/lib/ceph/bootstrap-rdb \
+			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 			--name mgr \
 			${DOCKERIMAGE} mgr
 		;;
@@ -55,8 +63,12 @@ case $1 in
 					--pid=host \
 					--restart=always \
 					-v ${STORE}/etc/ceph/:/etc/ceph \
-					-v ${STORE}/var/lib/ceph/:/var/lib/ceph \
 					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+					-v ${STORE}/var/lib/ceph/osd:/var/lib/ceph/osd \
+					-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+					-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+					-v ${STORE}/var/lib/ceph/bootstrap-rdb:/var/lib/ceph/bootstrap-rdb \
+					-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 					-v /mnt/osd:/var/lib/ceph/osd \
 					--name $OSDNAME \
 					${DOCKERIMAGE} osd_directory
@@ -67,8 +79,12 @@ case $1 in
 					--restart=always \
 					--privileged=true \
 					-v ${STORE}/etc/ceph:/etc/ceph \
-					-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
 					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+					-v ${STORE}/var/lib/ceph/osd:/var/lib/ceph/osd \
+					-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+					-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+					-v ${STORE}/var/lib/ceph/bootstrap-rdb:/var/lib/ceph/bootstrap-rdb \
+					-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 					-v /dev/:/dev/ \
 					-e OSD_DEVICE=$DEV \
 					--name $OSDNAME \
@@ -121,8 +137,12 @@ case $1 in
 		docker run -d --net=host \
 			--restart=always \
 			-v ${STORE}/etc/ceph:/etc/ceph \
-			-v ${STORE}/var/lib/ceph/:/var/lib/ceph/ \
 			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+			-v ${STORE}/var/lib/ceph/mds:/var/lib/ceph/mds \
+			-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+			-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+			-v ${STORE}/var/lib/ceph/bootstrap-rdb:/var/lib/ceph/bootstrap-rdb \
+			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 			-e CEPHFS_CREATE=1 \
 			-e CEPHFS_DATA_POOL_PG=$PGNUM \
 			-e CEPHFS_METADATA_POOL_PG=$PGNUM \
