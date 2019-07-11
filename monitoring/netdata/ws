@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKERIMAGE=titpetric/netdata:1.11
+DOCKERIMAGE=titpetric/netdata:1.15
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
