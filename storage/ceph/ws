@@ -3,9 +3,6 @@
 DOCKERIMAGE=ceph/daemon:v3.2.1-stable-3.2-luminous-debian-9-x86_64
 CEPHCOMMON_VERSION='=12.2.11-0ubuntu0.18.04.2'
 IMAGE=$(basename ${PWD})
-STOREBASE=${STOREBASE:-${HOME}/store}
-SECRET=${SECRET:-${STOREBASE}/.secret}
-STORE=${STORE:-${STOREBASE}/${IMAGE}}
 
 case $1 in
 	"mon")
@@ -14,13 +11,13 @@ case $1 in
 		NETWORK=$2
 		docker run -d --net=host \
 			--restart=always \
-			-v ${STORE}/etc/ceph:/etc/ceph \
-			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-			-v ${STORE}/var/lib/ceph/mon:/var/lib/ceph/mon \
-			-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-			-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-			-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+			-v /etc/ceph:/etc/ceph \
+			-v /var/log/ceph/:/var/log/ceph/ \
+			-v /var/lib/ceph/mon:/var/lib/ceph/mon \
+			-v /var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+			-v /var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+			-v /var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+			-v /var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 			-e MON_IP=$HOSTIP \
 			-e CEPH_PUBLIC_NETWORK=$NETWORK \
 			--name mon \
@@ -29,13 +26,13 @@ case $1 in
 	"mgr")
 		docker run -d --net=host \
 			--restart=always \
-			-v ${STORE}/etc/ceph:/etc/ceph \
-			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-			-v ${STORE}/var/lib/ceph/mgr:/var/lib/ceph/mgr \
-			-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-			-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-			-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+			-v /etc/ceph:/etc/ceph \
+			-v /var/log/ceph/:/var/log/ceph/ \
+			-v /var/lib/ceph/mgr:/var/lib/ceph/mgr \
+			-v /var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+			-v /var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+			-v /var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+			-v /var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 			--name mgr \
 			${DOCKERIMAGE} mgr
 		;;
@@ -49,12 +46,12 @@ case $1 in
 				docker run -d --net=host \
 					--pid=host \
 					--restart=always \
-					-v ${STORE}/etc/ceph/:/etc/ceph \
-					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-					-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-					-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-					-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-					-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+					-v /etc/ceph/:/etc/ceph \
+					-v /var/log/ceph/:/var/log/ceph/ \
+					-v /var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+					-v /var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+					-v /var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+					-v /var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 					-v /mnt/osd:/var/lib/ceph/osd \
 					--name $OSDNAME \
 					${DOCKERIMAGE} osd
@@ -64,12 +61,12 @@ case $1 in
 					--pid=host \
 					--restart=always \
 					--privileged=true \
-					-v ${STORE}/etc/ceph:/etc/ceph \
-					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-					-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-					-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-					-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-					-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+					-v /etc/ceph:/etc/ceph \
+					-v /var/log/ceph/:/var/log/ceph/ \
+					-v /var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+					-v /var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+					-v /var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+					-v /var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 					-v /dev/:/dev/ \
 					-e OSD_DEVICE=$DEV \
 					--name $OSDNAME \
@@ -115,24 +112,24 @@ case $1 in
 		[ -e ~/store/ceph/var/lib/ceph/mds ] \
 		       	&& docker run -d --net=host \
 				--restart=always \
-				-v ${STORE}/etc/ceph:/etc/ceph \
-				-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-				-v ${STORE}/var/lib/ceph/mds:/var/lib/ceph/mds \
-				-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-				-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-				-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-				-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+				-v /etc/ceph:/etc/ceph \
+				-v /var/log/ceph/:/var/log/ceph/ \
+				-v /var/lib/ceph/mds:/var/lib/ceph/mds \
+				-v /var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+				-v /var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+				-v /var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+				-v /var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 				--name mds \
 				${DOCKERIMAGE} mds \
 			|| docker run -d --net=host \
 				--restart=always \
-				-v ${STORE}/etc/ceph:/etc/ceph \
-				-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-				-v ${STORE}/var/lib/ceph/mds:/var/lib/ceph/mds \
-				-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-				-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-				-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-				-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+				-v /etc/ceph:/etc/ceph \
+				-v /var/log/ceph/:/var/log/ceph/ \
+				-v /var/lib/ceph/mds:/var/lib/ceph/mds \
+				-v /var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+				-v /var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+				-v /var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+				-v /var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 				-e CEPHFS_CREATE=1 \
 				-e CEPHFS_DATA_POOL_PG=$PGNUM \
 				-e CEPHFS_METADATA_POOL_PG=$PGNUM \
@@ -144,11 +141,11 @@ case $1 in
 		ACTIVEMDS=$1
 		sudo apt install ceph-common${CEPHCOMMON_VERSION} autofs -y
 		sudo apt-mark hold ceph-common
-		echo $(sudo grep key ${STORE}/etc/ceph/ceph.client.admin.keyring  | cut -d= -f2-) | \
-			sudo tee ${STORE}/etc/ceph/admin.secret
-		sudo chmod 600 ${STORE}/etc/ceph/admin.secret
+		echo $(sudo grep key /etc/ceph/ceph.client.admin.keyring  | cut -d= -f2-) | \
+			sudo tee /etc/ceph/admin.secret
+		sudo chmod 600 /etc/ceph/admin.secret
 		cat /etc/auto.misc | grep "^mds" | grep ceph | grep ${ACTIVEMDS} || \
-			echo "mds -fstype=ceph,noatime,nodiratime,name=admin,secretfile=${STORE}/etc/ceph/admin.secret ${ACTIVEMDS}:/" | \
+			echo "mds -fstype=ceph,noatime,nodiratime,name=admin,secretfile=/etc/ceph/admin.secret ${ACTIVEMDS}:/" | \
 			sudo tee -a /etc/auto.misc
 		cat /etc/auto.master | grep mnt | grep -F "/etc/auto.misc" || \
 			echo "/mnt/misc /etc/auto.misc --timeout 0" | \
@@ -162,14 +159,9 @@ case $1 in
         "cleanclean")
                 $0 clean
 		docker rmi ${DOCKERIMAGE}
-                sudo rm -rf ${STORE}
+                sudo rm -rf /etc/ceph /var/lib/ceph /var/log/ceph
                 ;;
 	"p-up")
-		$0 p-down
-		shift
-		DOCKER_OPTIONS=$*
-		sudo mkdir -p ${STORE}/`hostname`/prometheus
-		sudo chown nobody:nogroup ${STORE}/`hostname`/prometheus
 		docker exec mgr ceph mgr module enable prometheus
 		docker exec mgr ceph config set mgr mgr/prometheus/server_addr 127.0.0.1
 		;;
