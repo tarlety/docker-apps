@@ -51,13 +51,13 @@ case $1 in
 					--restart=always \
 					-v ${STORE}/etc/ceph/:/etc/ceph \
 					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-					-v /mnt/osd:/var/lib/ceph/osd \
 					-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
 					-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
 					-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
 					-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+					-v /mnt/osd:/var/lib/ceph/osd \
 					--name $OSDNAME \
-					${DOCKERIMAGE} osd_directory
+					${DOCKERIMAGE} osd
 			else
 				OSDNAME=osd${DEV//\//-}
 				docker run -d --net=host \
@@ -66,7 +66,6 @@ case $1 in
 					--privileged=true \
 					-v ${STORE}/etc/ceph:/etc/ceph \
 					-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-					-v ${STORE}/var/lib/ceph/osd:/var/lib/ceph/osd \
 					-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
 					-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
 					-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
@@ -74,7 +73,7 @@ case $1 in
 					-v /dev/:/dev/ \
 					-e OSD_DEVICE=$DEV \
 					--name $OSDNAME \
-					${DOCKERIMAGE} osd_ceph_disk
+					${DOCKERIMAGE} osd
 			fi
 		done
 		;;
