@@ -26,16 +26,6 @@ case $1 in
 			--name mon \
 			${DOCKERIMAGE} mon
 		;;
-	"monreset")
-		sudo rm -rf ${STORE}/var/lib/ceph/mon/*
-		;;
-	"reconfig-mons")
-		shift
-		MONS=$1
-		MONSIP=$2
-		sudo sed -i -e "s/^mon initial members = .*/mon initial members = ${MONS}/" ${STORE}/etc/ceph/ceph.conf
-		sudo sed -i -e "s/^mon host = .*/mon host = ${MONSIP}/" ${STORE}/etc/ceph/ceph.conf
-		;;
 	"mgr")
 		docker run -d --net=host \
 			--restart=always \
@@ -48,9 +38,6 @@ case $1 in
 			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
 			--name mgr \
 			${DOCKERIMAGE} mgr
-		;;
-	"mgrreset")
-		sudo rm -rf ${STORE}/var/lib/ceph/mgr/*
 		;;
 	"osds")
 		shift
@@ -91,20 +78,7 @@ case $1 in
 			fi
 		done
 		;;
-	"osdreset")
-		shift
-		ID=$1
-		sudo rm -rf ${STORE}/var/lib/ceph/osd/ceph-$ID
-		;;
-	"osdrm")
-		shift
-		ID=$1
-		docker exec mon ceph osd out $ID
-		docker exec mon ceph osd crush remove osd.$ID
-		docker exec mon ceph osd rm $ID
-		docker exec mon ceph auth del osd.$ID
-		;;
-	"osdclean")
+	"osd-down")
 		shift
 		for DEV in $*
 		do
@@ -114,49 +88,57 @@ case $1 in
 			else
 				OSDNAME=osd${DEV//\//-}
 			fi
-			echo "clean ${OSDNAME}"
+			echo "DOWN ${OSDNAME}"
 
 			docker stop ${OSDNAME}
 			docker rm ${OSDNAME}
 		done
 		;;
-	"zap")
+	"osd-zap")
 		shift
 		for DEV in $*
 		do
-			docker run --rm --privileged=true \
-				-v /dev/:/dev/ \
-				-e OSD_DEVICE=$DEV \
-				${DOCKERIMAGE} zap_device
+			echo "CLEAN ${DEV}"
+			if [ "$DEV" == "osdp" ]
+			then
+				sudo rm -rf /mnt/osd/*
+			else
+				docker run --rm --privileged=true \
+					-v /dev/:/dev/ \
+					-e OSD_DEVICE=$DEV \
+					${DOCKERIMAGE} zap_device
+			fi
 		done
 		;;
 	"mds")
 		shift
 		PGNUM=$1
-		docker run -d --net=host \
-			--restart=always \
-			-v ${STORE}/etc/ceph:/etc/ceph \
-			-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
-			-v ${STORE}/var/lib/ceph/mds:/var/lib/ceph/mds \
-			-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
-			-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
-			-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
-			-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
-			-e CEPHFS_CREATE=1 \
-			-e CEPHFS_DATA_POOL_PG=$PGNUM \
-			-e CEPHFS_METADATA_POOL_PG=$PGNUM \
-			--name mds \
-			${DOCKERIMAGE} mds
-		;;
-	"mdsreset")
-		sudo rm -rf ${STORE}/var/lib/ceph/mds/*
-		;;
-	"mdsclean")
-		docker exec mon ceph tell mon.\* injectargs '--mon-allow-pool-delete=true'
-		docker exec mon ceph mds fail 0
-		docker exec mon ceph fs rm cephfs --yes-i-really-mean-it
-		docker exec mon ceph osd pool delete cephfs_data cephfs_data --yes-i-really-really-mean-it
-		docker exec mon ceph osd pool delete cephfs_metadata cephfs_metadata --yes-i-really-really-mean-it
+		[ -e ~/store/ceph/var/lib/ceph/mds ] \
+		       	&& docker run -d --net=host \
+				--restart=always \
+				-v ${STORE}/etc/ceph:/etc/ceph \
+				-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+				-v ${STORE}/var/lib/ceph/mds:/var/lib/ceph/mds \
+				-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+				-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+				-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+				-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+				--name mds \
+				${DOCKERIMAGE} mds \
+			|| docker run -d --net=host \
+				--restart=always \
+				-v ${STORE}/etc/ceph:/etc/ceph \
+				-v ${STORE}/var/log/ceph/:/var/log/ceph/ \
+				-v ${STORE}/var/lib/ceph/mds:/var/lib/ceph/mds \
+				-v ${STORE}/var/lib/ceph/bootstrap-mds:/var/lib/ceph/bootstrap-mds \
+				-v ${STORE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+				-v ${STORE}/var/lib/ceph/bootstrap-rbd:/var/lib/ceph/bootstrap-rbd \
+				-v ${STORE}/var/lib/ceph/bootstrap-rgw:/var/lib/ceph/bootstrap-rgw \
+				-e CEPHFS_CREATE=1 \
+				-e CEPHFS_DATA_POOL_PG=$PGNUM \
+				-e CEPHFS_METADATA_POOL_PG=$PGNUM \
+				--name mds \
+				${DOCKERIMAGE} mds
 		;;
 	"mdsmount")
 		shift
@@ -208,19 +190,10 @@ case $1 in
 	*)
 		echo $(basename $0) prepare
 		echo $(basename $0) mon hostip network
-		echo $(basename $0) monreset
-		echo $(basename $0) reconfig-mons mons-string
 		echo $(basename $0) mgr
-		echo $(basename $0) mgrreset
-		echo $(basename $0) osds osdp dev1 dev2 ...
-		echo $(basename $0) osdrm osd.id
-		echo $(basename $0) osdclean osdp/dev1 dev2 ...
-		echo $(basename $0) osdreset osd.id
-		echo $(basename $0) zap dev1 dev2 ...
+		echo "$(basename $0) [osds/osds-down/osds-zap] osdp dev1 dev2 ..."
 		echo $(basename $0) mds pgnum
-		echo $(basename $0) mdsclean
 		echo $(basename $0) mdsmount mdshost
-		echo $(basename $0) mdsreset
 		echo $(basename $0) clean
 		echo $(basename $0) cleanclean
 		echo $(basename $0) p-up ...
