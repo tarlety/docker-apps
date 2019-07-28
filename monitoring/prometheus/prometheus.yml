@@ -36,7 +36,7 @@ scrape_configs:
     honor_labels: true
 
     static_configs:
-        - targets: ['127.0.0.1:19999']
+      - targets: ['127.0.0.1:19999']
 
   - job_name: 'ceph'
     static_configs:
