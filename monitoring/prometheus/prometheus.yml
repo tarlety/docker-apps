@@ -18,7 +18,7 @@ rule_files:
 # Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: 'localhost'
+  - job_name: 'netdata-scrape'
 
     metrics_path: '/api/v1/allmetrics'
     params:
@@ -36,8 +36,8 @@ scrape_configs:
     honor_labels: true
 
     static_configs:
-      - targets: ['127.0.0.1:19999']
+      - targets: ['localhost:19999']
 
   - job_name: 'ceph'
     static_configs:
-      - targets: ['127.0.0.1:9283']
+      - targets: ['localhost:9283']
