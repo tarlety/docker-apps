@@ -1,0 +1,85 @@
+#!/bin/bash
+# [Reference] https://docs.drone.io/installation/gitea/single-machine/
+
+# backlogs:
+# - enable TLS
+
+# zss interface
+
+case $1 in
+	"app")
+		PROJECTNAME=docker-apps
+		APPNAME=prometheus
+		APPVERSION=0.1.0
+		;;
+	"config")
+		CONFIGKEYS="image retention_time"
+		declare -A CONFIG_DESCRIPTIONS
+		CONFIG_DESCRIPTIONS=( \
+			["image"]="The docker image to download." \
+			["retention_time"]="This determines when to remove old data. Defaults to 15d." \
+			)
+
+		DEFAULT_IMAGE=prom/prometheus:v2.11.1
+		DEFAULT_RETENTION_TIME='1095d'
+		;;
+	"vars")
+		;;
+	"requirement")
+		echo - docker: $(which docker)
+		;;
+	"secret-create")
+		;;
+	"state-data-save")
+		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+		cd ${STORE}/docker
+		tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+		cd - &> /dev/null
+		;;
+	"state-secret-load-post")
+		;;
+	"state-data-load")
+		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+		then
+			mkdir -p ${STORE}/docker
+			cd ${STORE}/docker
+			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+			echo ${STATENAME} > ${CONFIG}/base_data
+			cd - &> /dev/null
+		fi
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	"command")
+		shift
+		case $1 in
+		"app")
+			shift
+			case $1 in
+				"up")
+					sudo mkdir -p ${STORE}/docker/prometheus ${STORE}/docker/config
+					sudo cp ${PWD}/prometheus.yml ${STORE}/docker/config
+					sudo chown -R nobody:nogroup ${STORE}/docker
+					docker run -d --name ${APPNAME} \
+						--restart=always \
+						--network=host \
+						-v ${STORE}/docker/config/prometheus.yml:/etc/prometheus/prometheus.yml \
+						-v ${STORE}/docker/prometheus:/prometheus \
+						${IMAGE} \
+							--storage.tsdb.retention.time=${RETENTION_TIME} \
+							--config.file=/etc/prometheus/prometheus.yml
+					;;
+				"down")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					;;
+			esac
+			;;
+		esac
+		;;
+	#------------------------------------------------------------------------------
+	"usage")
+		echo $(basename $0) "app [up/down]"
+		;;
+esac
+
