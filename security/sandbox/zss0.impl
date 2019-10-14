@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# zss interface
+
+case $1 in
+	"app")
+		PROJECTNAME=docker-apps
+		APPNAME=sandbox
+		APPVERSION=0.1.0
+		;;
+	"config")
+		CONFIGKEYS="xsp"
+		declare -A CONFIG_DESCRIPTIONS
+		CONFIG_DESCRIPTIONS=( \
+			["xsp"]="exposed ssh port." \
+			)
+
+		DEFAULT_XSP=2222
+		;;
+	"vars")
+		;;
+	"requirement")
+		echo - docker: $(which docker)
+		;;
+	"secret-create")
+		;;
+	"state-data-save")
+		;;
+	"state-secret-load-post")
+		;;
+	"state-data-load")
+		;;
+	# AppImplementing Section: commands
+	#------------------------------------------------------------------------------
+	"command")
+		shift
+		case $1 in
+		"app")
+			shift
+			case $1 in
+				"build")
+					docker build -t ${APPNAME}:${APPVERSION} .
+					;;
+				"up")
+					docker run -p ${XSP}:22 --name ${APPNAME} ${APPNAME}:${APPVERSION}
+					;;
+				"down")
+					docker stop ${APPNAME}
+					;;
+				"clean")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					;;
+				"cleanclean")
+					docker stop ${APPNAME}
+					docker rm ${APPNAME}
+					docker rmi ${IMAGE}
+					;;
+			esac
+			;;
+		esac
+		;;
+	#------------------------------------------------------------------------------
+	"usage")
+		echo $(basename $0) "app [build/up/down/clean/cleanclean]"
+		;;
+esac
+
