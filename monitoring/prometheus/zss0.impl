@@ -10,7 +10,7 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=prometheus
-		APPVERSION=0.1.0
+		APPVERSION=0.1.1
 		;;
 	"config")
 		CONFIGKEYS="image retention_time"
@@ -58,7 +58,7 @@ case $1 in
 			case $1 in
 				"up")
 					sudo mkdir -p ${STORE}/docker/prometheus ${STORE}/docker/config
-					sudo cp ${PWD}/prometheus.yml ${STORE}/docker/config
+					[ -f ${STORE}/docker/config/prometheus.yml ] || sudo cp ${PWD}/prometheus.yml ${STORE}/docker/config
 					sudo chown -R nobody:nogroup ${STORE}/docker
 					docker run -d --name ${APPNAME} \
 						--restart=always \
