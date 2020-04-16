@@ -27,6 +27,7 @@ case $1 in
 			--security-opt seccomp:unconfined --security-opt apparmor:unconfined \
 			--restart=always \
 			-v ${PWD}/netdata.conf:/etc/netdata/netdata.conf \
+			-v ${PWD}/httpcheck.conf:/etc/netdata/health.d/httpcheck.conf \
 			-v ${PWD}/apps_groups.conf:/etc/netdata/apps_groups.conf \
 			-v /proc:/host/proc:ro \
 			-v /sys:/host/sys:ro \
