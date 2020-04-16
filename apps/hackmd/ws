@@ -1,8 +1,8 @@
 #!/bin/bash
 
 IMAGE=$(basename ${PWD})
-DBIMAGE=postgres:9.6-alpine
-APIMAGE=hackmdio/hackmd:1.2.0
+DBIMAGE=postgres:10.12-alpine
+APIMAGE=hackmdio/hackmd:2.0.1
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
 STORE=${STORE:-${STOREBASE}/${IMAGE}}
@@ -35,10 +35,11 @@ case $1 in
 		[ "$IMGUR_CLIENTID" != "" ] && IMGUR_CLIENTID="-e CMD_IMGUR_CLIENTID=$IMGUR_CLIENTID"
 		docker run -d \
 			${DOCKER_CUSTOM_NETWORK} \
+      -p 3000:3000 \
 			--link ${IMAGE}-db:database \
 			--restart=always \
 			--name ${IMAGE}-ap \
-			-e HMD_DB_URL=postgres://hackmd:hackmdpass@database:5432/hackmd \
+			-e CMD_DB_URL=postgres://hackmd:hackmdpass@database:5432/hackmd \
 			$FACEBOOK_CLIENTID $FACEBOOK_CLIENTSECRET \
 			$TWITTER_CONSUMERKEY $TWITTER_CONSUMERSECRET \
 			$GITHUB_CLIENTID $GITHUB_CLIENTSECRET \
