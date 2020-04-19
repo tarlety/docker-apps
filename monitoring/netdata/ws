@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKERIMAGE=titpetric/netdata:1.15.0
+DOCKERIMAGE=netdata/netdata:v1.21.1
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
@@ -21,10 +21,8 @@ case $1 in
 		$0 down
 		shift
 		DOCKER_OPTIONS=$*
-		# issue: found message 'apparmor="DENIED" operation="ptrace"' in kern.log.
-		# ref: https://github.com/moby/moby/issues/7276
 		docker run -d --cap-add SYS_PTRACE \
-			--security-opt seccomp:unconfined --security-opt apparmor:unconfined \
+			--security-opt apparmor:unconfined \
 			--restart=always \
 			-v ${PWD}/netdata.conf:/etc/netdata/netdata.conf \
 			-v ${PWD}/httpcheck.conf:/etc/netdata/health.d/httpcheck.conf \

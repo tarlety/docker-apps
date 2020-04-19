@@ -6,7 +6,7 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=grafana
-		APPVERSION=0.1.0
+		APPVERSION=0.2.0
 		;;
 	"config")
 		CONFIGKEYS="image"
@@ -15,7 +15,7 @@ case $1 in
 			["image"]="The docker image to download." \
 			)
 
-		DEFAULT_IMAGE=grafana/grafana:6.3.2
+		DEFAULT_IMAGE=grafana/grafana:6.7.2
 		;;
 	"vars")
 		;;
