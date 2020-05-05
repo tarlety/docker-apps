@@ -5,7 +5,7 @@
 case $1 in
 	"app")
 		PROJECTNAME=docker-apps
-		APPNAME=blockbox
+		APPNAME=blackbox
 		APPVERSION=0.1.0
 		;;
 	"config")
