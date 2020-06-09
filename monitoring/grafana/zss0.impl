@@ -6,16 +6,18 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=grafana
-		APPVERSION=0.2.1
+		APPVERSION=0.3.0
 		;;
 	"config")
-		CONFIGKEYS="image"
+		CONFIGKEYS="image image_renderer"
 		declare -A CONFIG_DESCRIPTIONS
 		CONFIG_DESCRIPTIONS=( \
 			["image"]="The docker image to download." \
+			["image_renderer"]="The grafana image renderer to download." \
 			)
 
 		DEFAULT_IMAGE=grafana/grafana:7.0.3
+		DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:2.0.0
 		;;
 	"vars")
 		;;
@@ -51,17 +53,24 @@ case $1 in
 			shift
 			case $1 in
 				"up")
+          docker run -d --name ${APPNAME}-image-renderer \
+            --restart=always \
+            --network=host \
+            -e ENABLE_METRICS="true" \
+            ${IMAGE_RENDERER}
 					sudo mkdir -p ${STORE}/docker/grafana
 					sudo chown 472:472 ${STORE}/docker/grafana
 					docker run -d --name ${APPNAME} \
 						--restart=always \
 						--network=host \
+            -e GF_RENDERING_SERVER_URL="http://localhost:8081/render" \
+            -e GF_RENDERING_CALLBACK_URL="http://localhost:3000/" \
 						-v ${STORE}/docker/grafana:/var/lib/grafana \
 						${IMAGE}
 					;;
 				"down")
-					docker stop ${APPNAME}
-					docker rm ${APPNAME}
+					docker stop ${APPNAME} ${APPNAME}-image-renderer
+					docker rm ${APPNAME} ${APPNAME}-image-renderer
 					;;
 			esac
 			;;
