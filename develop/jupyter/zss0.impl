@@ -6,7 +6,7 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=jupyter
-		APPVERSION=0.1.0
+		APPVERSION=0.1.1
 		;;
 	"config")
 		CONFIGKEYS="port image"
@@ -57,7 +57,7 @@ case $1 in
 					sudo chown 1000:100 ${STORE}/docker/home
 					docker run -d --name ${APPNAME} \
 						--restart=always \
-						-p ${PORT}:8888 \
+						-p 127.0.0.1:${PORT}:8888 \
 						-v ${STORE}/docker/home:/home/jovyan \
 						${IMAGE}
 					;;
