@@ -16,7 +16,7 @@ case $1 in
 			["image_renderer"]="The grafana image renderer to download." \
 			)
 
-		DEFAULT_IMAGE=grafana/grafana:7.0.4
+		DEFAULT_IMAGE=grafana/grafana:7.0.6
 		DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:2.0.0
 		;;
 	"vars")
