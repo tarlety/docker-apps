@@ -6,7 +6,7 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=grafana
-		APPVERSION=0.3.1
+		APPVERSION=0.4.0
 		;;
 	"config")
 		CONFIGKEYS="image image_renderer"
@@ -67,6 +67,7 @@ case $1 in
             -e GF_RENDERING_SERVER_URL="http://localhost:8081/render" \
             -e GF_RENDERING_CALLBACK_URL="http://localhost:3000/" \
 						-v ${STORE}/docker/grafana:/var/lib/grafana \
+						-v ${STORE}/docker/config/grafana.ini:/etc/grafana/grafana.ini \
 						${IMAGE}
 					;;
 				"down")
