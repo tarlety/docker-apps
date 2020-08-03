@@ -39,6 +39,8 @@ case $1 in
       "sed -i -e 's@TELEGRAM_BOT_TOKEN=\"\"@TELEGRAM_BOT_TOKEN=\"${TGBOTTOKEN}\"@' /etc/netdata/health_alarm_notify.conf"
     docker exec netdata /bin/bash -c \
       "sed -i -e 's@DEFAULT_RECIPIENT_TELEGRAM=\"\"@DEFAULT_RECIPIENT_TELEGRAM=\"${TGCHATID}\"@' /etc/netdata/health_alarm_notify.conf"
+    docker exec netdata /bin/bash -c \
+      "sed -i -e 's@SEND_EMAIL=\"YES\"@SEND_EMAIL=\"\"@' /etc/netdata/health_alarm_notify.conf"
 		;;
 	"down")
 		docker stop ${IMAGE}
