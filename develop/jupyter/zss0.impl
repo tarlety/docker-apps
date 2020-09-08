@@ -17,7 +17,7 @@ case $1 in
       )
 
     DEFAULT_PORT=8888
-    DEFAULT_IMAGE=tensorflow-notebook:6d42503c684f
+    DEFAULT_IMAGE=jupyter/tensorflow-notebook:6d42503c684f
     ;;
   "vars")
     ;;
@@ -60,10 +60,9 @@ case $1 in
             -p 127.0.0.1:${PORT}:8888 \
             -v ${STORE}/docker/home:/home/jovyan \
             ${IMAGE}
-          docker exec ${APPNAME} apt-get update -y
-          docker exec ${APPNAME} pip install --upgrade pip
-          docker exec ${APPNAME} apt-get install python-opencv
-          docker exec ${APPNAME} pip install opencv-python
+          docker exec -u root ${APPNAME} apt-get update -y
+          docker exec -u root ${APPNAME} pip install --upgrade pip
+          docker exec -u root ${APPNAME} pip install opencv-python
           ;;
         "down")
           docker stop ${APPNAME}
