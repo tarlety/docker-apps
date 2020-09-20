@@ -1,0 +1,41 @@
+#!/bin/bash
+
+DOCKERIMAGE=dpage/pgadmin4:4.26
+IMAGE=$(basename ${PWD})
+STOREBASE=${STOREBASE:-${HOME}/store}
+SECRET=${SECRET:-${STOREBASE}/.secret}
+STORE=${STORE:-${STOREBASE}/${IMAGE}}
+
+case $1 in
+  "up")
+    $0 down
+    shift
+    DOCKER_OPTIONS=$*
+    docker run -d \
+      --network=host \
+      --name ${IMAGE} \
+      -e 'PGADMIN_DEFAULT_EMAIL=user@domain.com' \
+      -e 'PGADMIN_DEFAULT_PASSWORD=SuperSecret' \
+      ${DOCKER_OPTIONS} \
+      ${DOCKERIMAGE}
+    ;;
+  "down")
+    docker stop ${IMAGE}
+    docker rm ${IMAGE}
+    ;;
+  "clean")
+    docker stop ${IMAGE}
+    docker rm ${IMAGE}
+    docker rmi ${DOCKERIMAGE}
+    ;;
+  "cleanclean")
+    $0 clean
+    sudo rm -rf ${STORE}
+    ;;
+  *)
+    echo $(basename $0) up ...
+    echo $(basename $0) down
+    echo $(basename $0) clean
+    echo $(basename $0) cleanclean
+    ;;
+esac
