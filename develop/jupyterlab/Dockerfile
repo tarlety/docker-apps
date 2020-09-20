@@ -3,7 +3,7 @@ LABEL maintainer="tarlety@gmail.com"
 
 RUN apt-get update -y
 RUN apt-get install python-opencv -y
-RUN pip install numpy sklearn matplotlib opencv-python jupyterlab
+RUN pip install numpy sklearn matplotlib opencv-python jupyterlab imutils
 # keras and tensorflow version compatibility: https://docs.floydhub.com/guides/environments/
 # for CPU without AVX support, downgrade tensorflow version to 1.5.0
 RUN pip install keras==2.1.6 tensorflow==1.5.0
