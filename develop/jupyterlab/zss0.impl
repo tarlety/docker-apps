@@ -3,84 +3,84 @@
 # zss interface
 
 case $1 in
-	"app")
-		PROJECTNAME=docker-apps
-		APPNAME=jupyter-lab
-		APPVERSION=0.1.0
-		;;
-	"config")
-		CONFIGKEYS="port image"
-		declare -A CONFIG_DESCRIPTIONS
-		CONFIG_DESCRIPTIONS=( \
-			["port"]="The port to expose." \
-			["image"]="The docker image to download." \
-			)
+  "app")
+    PROJECTNAME=docker-apps
+    APPNAME=jupyter-lab
+    APPVERSION=0.1.0
+    ;;
+  "config")
+    CONFIGKEYS="port image"
+    declare -A CONFIG_DESCRIPTIONS
+    CONFIG_DESCRIPTIONS=( \
+      ["port"]="The port to expose." \
+      ["image"]="The docker image to download." \
+      )
 
-		DEFAULT_PORT=8888
-		DEFAULT_IMAGE=ndslabs/jupyterlab:0.34.10
-		;;
-	"vars")
-		;;
-	"requirement")
-		echo - docker: $(which docker)
-		;;
-	"secret-create")
-		;;
-	"state-data-save")
-		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
-		cd ${STORE}/docker
-		tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
-		cd - &> /dev/null
-		;;
-	"state-secret-load-post")
-		;;
-	"state-data-load")
-		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
-		then
-			mkdir -p ${STORE}/docker
-			cd ${STORE}/docker
-			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
-			echo ${STATENAME} > ${CONFIG}/base_data
-			cd - &> /dev/null
-		fi
-		;;
-	# AppImplementing Section: commands
-	#------------------------------------------------------------------------------
-	"command")
-		shift
-		case $1 in
-		"app")
-			shift
-			case $1 in
-				"up")
-					sudo mkdir -p ${STORE}/docker/home
-					sudo chown 1000:100 ${STORE}/docker/home
-					docker run -d --name ${APPNAME} \
-						--restart=always \
-						-p 127.0.0.1:${PORT}:8888 \
-						-v ${STORE}/docker/home:/home/jovyan \
-						${IMAGE}
-          docker exec ${APPNAME} apt-get update -y
-          docker exec ${APPNAME} pip install --upgrade pip
-          docker exec ${APPNAME} pip install numpy
-          docker exec ${APPNAME} pip install sklearn
-          docker exec ${APPNAME} pip install keras
-          docker exec ${APPNAME} pip install tensorflow
-          docker exec ${APPNAME} pip install matplotlib
-          docker exec ${APPNAME} apt-get install python-opencv
-          docker exec ${APPNAME} pip install opencv-python
-					;;
-				"down")
-					docker stop ${APPNAME}
-					docker rm ${APPNAME}
-					;;
-			esac
-			;;
-		esac
-		;;
-	#------------------------------------------------------------------------------
-	"usage")
-		echo $(basename $0) "app [up/down]"
-		;;
+    DEFAULT_PORT=8888
+    DEFAULT_IMAGE=${APPNAME}:$(date +%Y%m%d)
+    ;;
+  "vars")
+    ;;
+  "requirement")
+    echo - docker: $(which docker)
+    ;;
+  "secret-create")
+    ;;
+  "state-data-save")
+    mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+    cd ${STORE}/docker
+    tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+    cd - &> /dev/null
+    ;;
+  "state-secret-load-post")
+    ;;
+  "state-data-load")
+    if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+    then
+      mkdir -p ${STORE}/docker
+      cd ${STORE}/docker
+      gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+      echo ${STATENAME} > ${CONFIG}/base_data
+      cd - &> /dev/null
+    fi
+    ;;
+  # AppImplementing Section: commands
+  #------------------------------------------------------------------------------
+  "command")
+    shift
+    case $1 in
+    "app")
+      shift
+      case $1 in
+        "up")
+          sudo mkdir -p ${STORE}/docker/home
+          sudo chown 1000:100 ${STORE}/docker/home
+          docker build -t ${IMAGE} -f Dockerfile .
+          docker run -d --name ${APPNAME} \
+            --restart=always \
+            -p 127.0.0.1:${PORT}:8888 \
+            -v ${STORE}/docker/home:/home/me \
+            ${IMAGE}
+          ;;
+        "down")
+          docker stop ${APPNAME}
+          docker rm ${APPNAME}
+          ;;
+        "preflight")
+          docker exec -u root ${APPNAME} \
+            apt-get update -y
+          docker exec -u root ${APPNAME} \
+            apt-get install python-opencv
+          docker exec -u root ${APPNAME} \
+            pip install numpy sklearn keras==2.3.1 tensorflow==1.15.0 matplotlib opencv-python jupyterlab
+          ;;
+      esac
+      ;;
+    esac
+    ;;
+  #------------------------------------------------------------------------------
+  "usage")
+    echo $(basename $0) "app [up/down/preflight]"
+    ;;
 esac
 
