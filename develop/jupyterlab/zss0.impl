@@ -6,18 +6,22 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyter-lab
-    APPVERSION=0.1.0
+    APPVERSION=0.2.0
     ;;
   "config")
-    CONFIGKEYS="port image"
+    CONFIGKEYS="port image tf_ver keras_ver"
     declare -A CONFIG_DESCRIPTIONS
     CONFIG_DESCRIPTIONS=( \
       ["port"]="The port to expose." \
-      ["image"]="The docker image to download." \
+      ["image"]="The docker image name to build." \
+      ["tf_ver"]="The tensorflow version to use." \
+      ["keras_ver"]="The keras version to use." \
       )
 
     DEFAULT_PORT=8888
     DEFAULT_IMAGE=${APPNAME}:$(date +%Y%m%d)
+    DEFAULT_TF_VER=1.5.0
+    DEFAULT_KERAS_VER=2.1.6
     ;;
   "vars")
     ;;
@@ -55,7 +59,7 @@ case $1 in
         "up")
           sudo mkdir -p ${STORE}/docker/home
           sudo chown 1000:100 ${STORE}/docker/home
-          docker build -t ${IMAGE} -f Dockerfile .
+          docker build -t ${IMAGE} --build-arg TF_VER=${TF_VER} --build-arg KERAS_VER=${KERAS_VER} -f Dockerfile .
           docker run -d --name ${APPNAME} \
             --restart=always \
             -p 127.0.0.1:${PORT}:8888 \
