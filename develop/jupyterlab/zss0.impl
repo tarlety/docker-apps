@@ -5,7 +5,7 @@
 case $1 in
   "app")
     PROJECTNAME=docker-apps
-    APPNAME=jupyter-lab
+    APPNAME=jupyterlab
     APPVERSION=0.2.0
     ;;
   "config")
