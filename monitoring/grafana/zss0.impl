@@ -6,18 +6,20 @@ case $1 in
 	"app")
 		PROJECTNAME=docker-apps
 		APPNAME=grafana
-		APPVERSION=0.4.1
+		APPVERSION=0.5.0
 		;;
 	"config")
-		CONFIGKEYS="image image_renderer"
+		CONFIGKEYS="image image_renderer timezone"
 		declare -A CONFIG_DESCRIPTIONS
 		CONFIG_DESCRIPTIONS=( \
 			["image"]="The docker image to download." \
 			["image_renderer"]="The grafana image renderer to download." \
+			["timezone"]="The grafana image renderer timezone." \
 			)
 
 		DEFAULT_IMAGE=grafana/grafana:7.1.5
 		DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:2.0.0
+    DEFAULT_TIMEZONE="$(cat /etc/timezone)"
 		;;
 	"vars")
 		;;
@@ -60,12 +62,15 @@ case $1 in
             --restart=always \
             --network=host \
             -e ENABLE_METRICS="true" \
+            -e BROWSER_TZ="${TIMEZONE}" \
+            -e TZ="${TIMEZONE}" \
             ${IMAGE_RENDERER}
 					docker run -d --name ${APPNAME} \
 						--restart=always \
 						--network=host \
             -e GF_RENDERING_SERVER_URL="http://localhost:8081/render" \
             -e GF_RENDERING_CALLBACK_URL="http://localhost:3000/" \
+            -e TZ="${TIMEZONE}" \
 						-v ${STORE}/docker/grafana:/var/lib/grafana \
 						-v ${STORE}/docker/config/grafana.ini:/etc/grafana/grafana.ini \
 						${IMAGE}
