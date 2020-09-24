@@ -3,61 +3,61 @@
 # zss interface
 
 case $1 in
-	"app")
-		PROJECTNAME=docker-apps
-		APPNAME=grafana
-		APPVERSION=0.5.0
-		;;
-	"config")
-		CONFIGKEYS="image image_renderer timezone"
-		declare -A CONFIG_DESCRIPTIONS
-		CONFIG_DESCRIPTIONS=( \
-			["image"]="The docker image to download." \
-			["image_renderer"]="The grafana image renderer to download." \
-			["timezone"]="The grafana image renderer timezone." \
-			)
+  "app")
+    PROJECTNAME=docker-apps
+    APPNAME=grafana
+    APPVERSION=0.5.0
+    ;;
+  "config")
+    CONFIGKEYS="image image_renderer timezone"
+    declare -A CONFIG_DESCRIPTIONS
+    CONFIG_DESCRIPTIONS=( \
+      ["image"]="The docker image to download." \
+      ["image_renderer"]="The grafana image renderer to download." \
+      ["timezone"]="The grafana image renderer timezone." \
+      )
 
-		DEFAULT_IMAGE=grafana/grafana:7.1.5
-		DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:2.0.0
+    DEFAULT_IMAGE=grafana/grafana:7.1.5
+    DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:2.0.0
     DEFAULT_TIMEZONE="$(cat /etc/timezone)"
-		;;
-	"vars")
-		;;
-	"requirement")
-		echo - docker: $(which docker)
-		;;
-	"secret-create")
-		;;
-	"state-data-save")
-		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
-		cd ${STORE}/docker
-		tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
-		cd - &> /dev/null
-		;;
-	"state-secret-load-post")
-		;;
-	"state-data-load")
-		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
-		then
-			mkdir -p ${STORE}/docker
-			cd ${STORE}/docker
-			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
-			echo ${STATENAME} > ${CONFIG}/base_data
-			cd - &> /dev/null
-		fi
-		;;
-	# AppImplementing Section: commands
-	#------------------------------------------------------------------------------
-	"command")
-		shift
-		case $1 in
-		"app")
-			shift
-			case $1 in
-				"up")
-					sudo mkdir -p ${STORE}/docker/grafana ${STORE}/docker/config
-					[ -f ${STORE}/docker/config/grafana.ini ] || sudo cp ${PWD}/grafana.ini ${STORE}/docker/config
-					sudo chown -R 472:472 ${STORE}/docker
+    ;;
+  "vars")
+    ;;
+  "requirement")
+    echo - docker: $(which docker)
+    ;;
+  "secret-create")
+    ;;
+  "state-data-save")
+    mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+    cd ${STORE}/docker
+    tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+    cd - &> /dev/null
+    ;;
+  "state-secret-load-post")
+    ;;
+  "state-data-load")
+    if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+    then
+      mkdir -p ${STORE}/docker
+      cd ${STORE}/docker
+      gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+      echo ${STATENAME} > ${CONFIG}/base_data
+      cd - &> /dev/null
+    fi
+    ;;
+  # AppImplementing Section: commands
+  #------------------------------------------------------------------------------
+  "command")
+    shift
+    case $1 in
+    "app")
+      shift
+      case $1 in
+        "up")
+          sudo mkdir -p ${STORE}/docker/grafana ${STORE}/docker/config
+          [ -f ${STORE}/docker/config/grafana.ini ] || sudo cp ${PWD}/grafana.ini ${STORE}/docker/config
+          sudo chown -R 472:472 ${STORE}/docker
           docker run -d --name ${APPNAME}-image-renderer \
             --restart=always \
             --network=host \
@@ -65,27 +65,27 @@ case $1 in
             -e BROWSER_TZ="${TIMEZONE}" \
             -e TZ="${TIMEZONE}" \
             ${IMAGE_RENDERER}
-					docker run -d --name ${APPNAME} \
-						--restart=always \
-						--network=host \
+          docker run -d --name ${APPNAME} \
+            --restart=always \
+            --network=host \
             -e GF_RENDERING_SERVER_URL="http://localhost:8081/render" \
             -e GF_RENDERING_CALLBACK_URL="http://localhost:3000/" \
             -e TZ="${TIMEZONE}" \
-						-v ${STORE}/docker/grafana:/var/lib/grafana \
-						-v ${STORE}/docker/config/grafana.ini:/etc/grafana/grafana.ini \
-						${IMAGE}
-					;;
-				"down")
-					docker stop ${APPNAME} ${APPNAME}-image-renderer
-					docker rm ${APPNAME} ${APPNAME}-image-renderer
-					;;
-			esac
-			;;
-		esac
-		;;
-	#------------------------------------------------------------------------------
-	"usage")
-		echo $(basename $0) "app [up/down]"
-		;;
+            -v ${STORE}/docker/grafana:/var/lib/grafana \
+            -v ${STORE}/docker/config/grafana.ini:/etc/grafana/grafana.ini \
+            ${IMAGE}
+          ;;
+        "down")
+          docker stop ${APPNAME} ${APPNAME}-image-renderer
+          docker rm ${APPNAME} ${APPNAME}-image-renderer
+          ;;
+      esac
+      ;;
+    esac
+    ;;
+  #------------------------------------------------------------------------------
+  "usage")
+    echo $(basename $0) "app [up/down]"
+    ;;
 esac
 
