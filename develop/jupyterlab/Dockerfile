@@ -30,7 +30,9 @@ RUN useradd -u 1000 -ms /bin/bash me
 USER me
 
 # Install dotnet machine learing packages
+RUN cd /home/me
 RUN dotnet tool install -g dotnet-try
+RUN home/me/.dotnet/tools/dotnet-try jupyter install
 
 EXPOSE 8888
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/home/me"]
