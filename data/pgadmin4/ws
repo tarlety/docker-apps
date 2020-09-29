@@ -12,7 +12,7 @@ case $1 in
     shift
     DOCKER_OPTIONS=$*
     docker run -d \
-      --network=host \
+      -P \
       --name ${IMAGE} \
       -e 'PGADMIN_DEFAULT_EMAIL=user@domain.com' \
       -e 'PGADMIN_DEFAULT_PASSWORD=SuperSecret' \
