@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyterlab
-    APPVERSION=0.2.1
+    APPVERSION=0.3.0
     ;;
   "config")
     CONFIGKEYS="port image tf_ver keras_ver"
@@ -67,19 +67,28 @@ case $1 in
             -v ${PWD}/kernel/dotnet-csharp/kernel.json:/home/me/.local/share/jupyter/kernels/.net-csharp/kernel.json \
             -v ${PWD}/kernel/dotnet-fsharp/kernel.json:/home/me/.local/share/jupyter/kernels/.net-fsharp/kernel.json \
             ${IMAGE}
-          docker exec ${APPNAME} cat /home/me/.local/share/jupyter/runtime/nbserver-1-open.html | grep 'here to go' | cut -d\" -f2 | cut -d: -f2
           ;;
         "down")
           docker stop ${APPNAME}
           docker rm ${APPNAME}
           ;;
-        "preflight")
-          docker exec -u root ${APPNAME} \
-            apt-get update -y
-          docker exec -u root ${APPNAME} \
-            apt-get install python-opencv
-          docker exec -u root ${APPNAME} \
-            pip install numpy sklearn keras==2.3.1 tensorflow==1.15.0 matplotlib opencv-python jupyterlab
+      esac
+      ;;
+    "secret")
+      shift
+      case $1 in
+        "token")
+          docker exec ${APPNAME} \
+            cat /home/me/.local/share/jupyter/runtime/nbserver-1-open.html | \
+            grep 'here to go' | cut -d\" -f2 | cut -d= -f2
+          ;;
+        "kaggle")
+          docker exec ${APPNAME} /bin/bash -c "mkdir /home/me/.kaggle"
+          (docker exec -i ${APPNAME} /bin/bash -c "cat > /home/me/.kaggle/kaggle.json") < ~/.kaggle/kaggle.json
+          docker exec ${APPNAME} /bin/bash -c "chmod 600 /home/me/.kaggle/kaggle.json"
+          ;;
+        "git")
+          (docker exec -i ${APPNAME} /bin/bash -c "cat > ~/.git-credentials") < ~/.git-credentials
           ;;
       esac
       ;;
@@ -87,7 +96,8 @@ case $1 in
     ;;
   #------------------------------------------------------------------------------
   "usage")
-    echo $(basename $0) "app [up/down/preflight]"
+    echo $(basename $0) "app [up/down/token]"
+    echo $(basename $0) "secret [token/kaggle/git]"
     ;;
 esac
 

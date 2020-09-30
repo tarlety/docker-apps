@@ -10,11 +10,12 @@ ENV TF_VER=$TF_VER
 # Install python machine learning packages
 RUN apt-get update -y
 RUN apt-get install python-opencv -y
-RUN pip install numpy pandas sklearn matplotlib opencv-python jupyterlab
+
 # keras and tensorflow version compatibility: https://docs.floydhub.com/guides/environments/
 # for CPU without AVX support, downgrade tensorflow version to 1.5.0
 RUN pip install keras==$KERAS_VER
 RUN pip install tensorflow==$TF_VER
+RUN pip install numpy pandas sklearn seaborn matplotlib opencv-python jupyterlab
 
 # Install Jupyter extension dependencies
 RUN apt-get install -y nodejs npm
@@ -28,6 +29,10 @@ RUN apt-get update
 RUN apt-get install -y apt-transport-https
 RUN apt-get update
 RUN apt-get install -y dotnet-sdk-3.1
+
+# Install kaggle
+# [ref] https://medium.com/@jeff.daniel77/accessing-the-kaggle-com-api-with-jupyter-notebook-on-windows-d6f330bc6953
+RUN pip install kaggle
 
 # User not root
 RUN groupadd jupyter
