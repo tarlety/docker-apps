@@ -10,7 +10,7 @@ ENV TF_VER=$TF_VER
 # Install python machine learning packages
 RUN apt-get update -y
 RUN apt-get install python-opencv -y
-RUN pip install numpy sklearn matplotlib opencv-python jupyterlab
+RUN pip install numpy pandas sklearn matplotlib opencv-python jupyterlab
 # keras and tensorflow version compatibility: https://docs.floydhub.com/guides/environments/
 # for CPU without AVX support, downgrade tensorflow version to 1.5.0
 RUN pip install keras==$KERAS_VER
@@ -18,6 +18,7 @@ RUN pip install tensorflow==$TF_VER
 
 # Install Jupyter extension dependencies
 RUN apt-get install -y nodejs npm
+RUN pip install jupyterlab-git
 
 # Install globall dotnet SDK
 # [ref] https://medium.com/machinelearningadvantage/run-c-machine-learning-code-directly-in-a-jupyter-notebook-a32e13e40b9c
@@ -36,13 +37,14 @@ RUN useradd -u 1000 -ms /bin/bash me
 RUN usermod -a -G jupyter me
 USER me
 
-# Install Jupyter extension depedencies
-RUN pip install jupyterlab-git
-
 # Install dotnet machine learing packages
 RUN cd /home/me
 RUN dotnet tool install -g dotnet-try
 RUN home/me/.dotnet/tools/dotnet-try jupyter install
+
+# Install Jupyterlab extensions
+RUN jupyter labextension install @jupyterlab/git
+RUN jupyter labextension install nbdime-jupyterlab
 
 EXPOSE 8888
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/home/me"]

@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyterlab
-    APPVERSION=0.2.0
+    APPVERSION=0.2.1
     ;;
   "config")
     CONFIGKEYS="port image tf_ver keras_ver"
@@ -63,8 +63,11 @@ case $1 in
           docker run -d --name ${APPNAME} \
             --restart=always \
             -p 127.0.0.1:${PORT}:8888 \
-            -v ${STORE}/docker/home:/home/me \
+            -v ${STORE}/docker/notes:/home/me/notes \
+            -v ${PWD}/kernel/dotnet-csharp/kernel.json:/home/me/.local/share/jupyter/kernels/.net-csharp/kernel.json \
+            -v ${PWD}/kernel/dotnet-fsharp/kernel.json:/home/me/.local/share/jupyter/kernels/.net-fsharp/kernel.json \
             ${IMAGE}
+          docker exec ${APPNAME} cat /home/me/.local/share/jupyter/runtime/nbserver-1-open.html | grep 'here to go' | cut -d\" -f2 | cut -d: -f2
           ;;
         "down")
           docker stop ${APPNAME}
