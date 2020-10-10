@@ -15,7 +15,10 @@ RUN apt-get install python-opencv -y
 # for CPU without AVX support, downgrade tensorflow version to 1.5.0
 RUN pip install keras==$KERAS_VER
 RUN pip install tensorflow==$TF_VER
-RUN pip install numpy pandas sklearn seaborn matplotlib opencv-python jupyterlab
+RUN pip install numpy pandas sklearn seaborn matplotlib
+RUN pip install opencv-python
+RUN pip install jupyterlab
+RUN pip install xgboost
 
 # Install Jupyter extension dependencies
 RUN apt-get install -y nodejs npm
