@@ -48,8 +48,8 @@ RUN dotnet tool install -g dotnet-try
 RUN home/me/.dotnet/tools/dotnet-try jupyter install
 
 # Install Jupyterlab extensions
-RUN jupyter labextension install @jupyterlab/git
-RUN jupyter labextension install nbdime-jupyterlab
+#RUN jupyter labextension install @jupyterlab/git
+#RUN jupyter labextension install nbdime-jupyterlab
 
 EXPOSE 8888
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/home/me"]

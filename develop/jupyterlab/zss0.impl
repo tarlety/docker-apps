@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyterlab
-    APPVERSION=0.3.0
+    APPVERSION=0.3.1
     ;;
   "config")
     CONFIGKEYS="port image tf_ver keras_ver"
@@ -67,6 +67,8 @@ case $1 in
             -v ${PWD}/kernel/dotnet-csharp/kernel.json:/home/me/.local/share/jupyter/kernels/.net-csharp/kernel.json \
             -v ${PWD}/kernel/dotnet-fsharp/kernel.json:/home/me/.local/share/jupyter/kernels/.net-fsharp/kernel.json \
             ${IMAGE}
+          docker exec ${IMAGE} jupyter labextension install @jupyterlab/git
+          docker exec ${IMAGE} jupyter labextension install nbdime-jupyterlab
           ;;
         "down")
           docker stop ${APPNAME}
@@ -78,6 +80,7 @@ case $1 in
       shift
       case $1 in
         "token")
+          echo -n "login token:"
           docker exec ${APPNAME} \
             cat /home/me/.local/share/jupyter/runtime/nbserver-1-open.html | \
             grep 'here to go' | cut -d\" -f2 | cut -d= -f2
