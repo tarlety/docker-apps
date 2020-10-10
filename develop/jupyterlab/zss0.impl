@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyterlab
-    APPVERSION=0.3.1
+    APPVERSION=0.3.2
     ;;
   "config")
     CONFIGKEYS="port image tf_ver keras_ver"
@@ -90,6 +90,12 @@ case $1 in
           (docker exec -i ${APPNAME} /bin/bash -c "cat > /home/me/.kaggle/kaggle.json") < ~/.kaggle/kaggle.json
           docker exec ${APPNAME} /bin/bash -c "chmod 600 /home/me/.kaggle/kaggle.json"
           ;;
+        "api")
+          docker exec ${APPNAME} /bin/bash -c "mkdir /home/me/.api"
+          read -p "input google apikey:" APIKEY
+          echo -n ${APIKEY} | (docker exec -i ${APPNAME} /bin/bash -c "cat > /home/me/.api/googleapi.key")
+          docker exec ${APPNAME} /bin/bash -c "chmod 600 /home/me/.api/*"
+          ;;
         "git")
           (docker exec -i ${APPNAME} /bin/bash -c "cat > ~/.git-credentials") < ~/.git-credentials
           ;;
@@ -100,7 +106,7 @@ case $1 in
   #------------------------------------------------------------------------------
   "usage")
     echo $(basename $0) "app [up/down/token]"
-    echo $(basename $0) "secret [token/kaggle/git]"
+    echo $(basename $0) "secret [token/kaggle/api/git]"
     ;;
 esac
 
