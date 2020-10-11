@@ -3,66 +3,81 @@
 # zss interface
 
 case $1 in
-	"app")
-		PROJECTNAME=docker-apps
-		APPNAME=sandbox
-		APPVERSION=0.1.0
-		;;
-	"config")
-		CONFIGKEYS="xsp"
-		declare -A CONFIG_DESCRIPTIONS
-		CONFIG_DESCRIPTIONS=( \
-			["xsp"]="exposed ssh port." \
-			)
+  "app")
+    PROJECTNAME=docker-apps
+    APPNAME=sandbox
+    APPVERSION=0.2.0
+    ;;
+  "config")
+    CONFIGKEYS="xsp"
+    declare -A CONFIG_DESCRIPTIONS
+    CONFIG_DESCRIPTIONS=( \
+      ["xsp"]="exposed ssh port." \
+      )
 
-		DEFAULT_XSP=2222
-		;;
-	"vars")
-		;;
-	"requirement")
-		echo - docker: $(which docker)
-		;;
-	"secret-create")
-		;;
-	"state-data-save")
-		;;
-	"state-secret-load-post")
-		;;
-	"state-data-load")
-		;;
-	# AppImplementing Section: commands
-	#------------------------------------------------------------------------------
-	"command")
-		shift
-		case $1 in
-		"app")
-			shift
-			case $1 in
-				"build")
-					docker build -t ${APPNAME}:${APPVERSION} .
-					;;
-				"up")
-					docker run -p ${XSP}:22 --name ${APPNAME} ${APPNAME}:${APPVERSION}
-					;;
-				"down")
-					docker stop ${APPNAME}
-					;;
-				"clean")
-					docker stop ${APPNAME}
-					docker rm ${APPNAME}
-					;;
-				"cleanclean")
-					docker stop ${APPNAME}
-					docker rm ${APPNAME}
-					docker rmi ${IMAGE}
-					;;
-			esac
-			;;
-		esac
-		;;
-	#------------------------------------------------------------------------------
-	"usage")
-		echo $(basename $0) "app [build/up/down/clean/cleanclean]"
-		;;
+    DEFAULT_XSP=2222
+    ;;
+  "vars")
+    ;;
+  "requirement")
+    echo - docker: $(which docker)
+    ;;
+  "secret-create")
+    ;;
+  "state-data-save")
+    ;;
+  "state-secret-load-post")
+    ;;
+  "state-data-load")
+    ;;
+  # AppImplementing Section: commands
+  #------------------------------------------------------------------------------
+  "command")
+    shift
+    case $1 in
+    "app")
+      shift
+      case $1 in
+        "build")
+          docker build -t ${APPNAME}:${APPVERSION} .
+          ;;
+        "up")
+          docker run -d -P --name ${APPNAME} ${APPNAME}:${APPVERSION}
+          (docker exec -i ${APPNAME} /bin/bash -c "cat > /home/me/.ssh/authorized_keys") < ~/.ssh/id_rsa.pub
+          docker port ${APPNAME} 22
+          ;;
+        "down")
+          docker stop ${APPNAME}
+          ;;
+        "clean")
+          docker stop ${APPNAME}
+          docker rm ${APPNAME}
+          ;;
+        "cleanclean")
+          docker stop ${APPNAME}
+          docker rm ${APPNAME}
+          docker rmi ${IMAGE}
+          ;;
+        "dotfiles")
+          (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.tmux.conf") < ~/.tmux.conf
+          (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.tmux.conf.local") < ~/.tmux.conf.local
+          (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.vimrc") < ~/.vimrc
+          ;;
+        "ssh")
+          ssh -o StrictHostKeyChecking=no -p $(docker port ${APPNAME} 22 | cut -d: -f2) me@localhost
+          ;;
+        "grant")
+          docker exec ${APPNAME} usermod -aG sudo me
+          echo "me ALL=(ALL:ALL) NOPASSWD: ALL" | (docker exec -i ${APPNAME} /bin/bash -c "cat > /etc/sudoers.d/me")
+          ;;
+      esac
+      ;;
+    esac
+    ;;
+  #------------------------------------------------------------------------------
+  "usage")
+    echo $(basename $0) "app [build/up/down/clean/cleanclean]"
+    echo $(basename $0) "app [dotfiles/ssh/grant]"
+    ;;
 esac
 
