@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.3.2
+    APPVERSION=0.3.3
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -50,6 +50,9 @@ case $1 in
             -v ${STORE}/docker/data:/data \
             -v ${STORE}/docker/opt:/opt \
             -v ${STORE}/docker/store:/home/me/store \
+            -e DISPLAY=$DISPLAY \
+            -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -v $HOME/.Xauthority:/home/me/.Xauthority \
             -p ${XSP}:22 \
             --hostname ${HOSTNAME} \
             --name ${APPNAME} \
