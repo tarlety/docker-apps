@@ -45,6 +45,7 @@ RUN chsh me -s /usr/bin/zsh
 
 USER me
 RUN mkdir -p /home/me/.ssh
+RUN mkdir -p /home/me/store
 RUN sh -c "$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
 RUN sed -i 's@ZSH_THEME="robbyrussell"@ZSH_THEME="random"@g' /home/me/.zshrc
 RUN sed -i 's@plugins=(git)@plugins=(autojump vi-mode command-not-found safe-paste history-substring-search fzf)@g' /home/me/.zshrc
@@ -59,4 +60,7 @@ RUN echo "source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 
 USER root
 EXPOSE 22
+VOLUME /data
+VOLUME /opt
+VOLUME /home/me/store
 CMD ["/usr/sbin/sshd", "-D"]
