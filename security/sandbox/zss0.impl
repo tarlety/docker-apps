@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.3.1
+    APPVERSION=0.3.2
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -46,6 +46,7 @@ case $1 in
           mkdir -p ${STORE}/docker/{data,opt,store}
           docker build -t ${IMAGE} .
           docker run -d \
+            --restart=always \
             -v ${STORE}/docker/data:/data \
             -v ${STORE}/docker/opt:/opt \
             -v ${STORE}/docker/store:/home/me/store \
