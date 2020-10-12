@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.3.0
+    APPVERSION=0.3.1
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -69,15 +69,30 @@ case $1 in
           (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.tmux.conf.local") < ~/.tmux.conf.local
           (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.vimrc") < ~/.vimrc
           ;;
+        "ohmystuff")
+          docker exec -u me -i ${APPNAME} /bin/bash -c "cd
+            git clone --depth=1 https://github.com/amix/vimrc.git ~/.vim_runtime
+            sh ~/.vim_runtime/install_awesome_vimrc.sh
+            git clone https://github.com/gpakosz/.tmux.git ~/.tmux
+            ln -s -f .tmux/.tmux.conf
+            cp .tmux/.tmux.conf.local .
+            "
+          ;;
         "ssh")
+          PORT=$(docker port ${APPNAME} 22 | cut -d: -f2)
+          ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "[localhost]:${PORT}"
           ssh -o StrictHostKeyChecking=no -p $(docker port ${APPNAME} 22 | cut -d: -f2) me@localhost
           ;;
-        "suroot")
-          docker exec -u root -it ${APPNAME} /bin/bash
+        "console")
+          docker exec -it ${APPNAME} /bin/bash
           ;;
-        "grant")
+        "granton")
           docker exec ${APPNAME} usermod -aG sudo me
           echo "me ALL=(ALL:ALL) NOPASSWD: ALL" | (docker exec -i ${APPNAME} /bin/bash -c "cat > /etc/sudoers.d/me")
+          ;;
+        "grantoff")
+          docker exec -i ${APPNAME} /bin/bash -c "rm /etc/sudoers.d/me"
+          docker exec ${APPNAME} gpasswd -d me sudo
           ;;
       esac
       ;;
@@ -86,7 +101,7 @@ case $1 in
   #------------------------------------------------------------------------------
   "usage")
     echo $(basename $0) "app [up/down/clean]"
-    echo $(basename $0) "app [dotfiles/suroot/ssh/grant]"
+    echo $(basename $0) "app [dotfiles/ohmystuff/console/ssh/granton/grantoff]"
     ;;
 esac
 

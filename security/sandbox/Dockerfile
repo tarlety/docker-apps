@@ -21,6 +21,11 @@ RUN echo 'postfix postfix/mailname string "localhost"' | debconf-set-selections
 RUN echo 'postfix postfix/main_mailer_type string "Local only"' | debconf-set-selections
 RUN apt-get install -y logwatch unattended-upgrades
 
+# set locale to en_US.UTF-8
+
+RUN apt-get install -y locales
+RUN locale-gen en_US.UTF-8
+
 # Install sshd
 
 RUN apt-get install -y openssh-server
@@ -47,7 +52,6 @@ USER me
 RUN mkdir -p /home/me/.ssh
 RUN mkdir -p /home/me/store
 RUN sh -c "$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-RUN sed -i 's@ZSH_THEME="robbyrussell"@ZSH_THEME="random"@g' /home/me/.zshrc
 RUN sed -i 's@plugins=(git)@plugins=(autojump vi-mode command-not-found safe-paste history-substring-search fzf)@g' /home/me/.zshrc
 RUN echo "bindkey '^f' autosuggest-accept" >> /home/me/.zshrc
 RUN echo "bindkey '^P' history-substring-search-up" >> /home/me/.zshrc
@@ -55,6 +59,7 @@ RUN echo "bindkey '^N' history-substring-search-down" >> /home/me/.zshrc
 RUN echo "zstyle -e ':completion:*:default' list-colors 'reply=(\"\${PREFIX:+=(#bi)(\$PREFIX:t)(?)*==34=34}:\${(s.:.)LS_COLORS}\")';" >> /home/me/.zshrc
 RUN echo "source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh" >> /home/me/.zshrc
 RUN echo "source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> /home/me/.zshrc
+RUN echo "source /usr/share/powerlevel9k/powerlevel9k.zsh-theme" >> /home/me/.zshrc
 
 # Run sshd as root
 
