@@ -10,7 +10,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tz
 
 RUN apt-get upgrade -y
 RUN yes | unminimize
-RUN apt-get install -y net-tools moreutils jq curl wget sudo
+RUN apt-get install -y net-tools moreutils jq curl wget sudo apt-utils
 RUN apt-get install -y tmux zsh vim git
 RUN apt-get install -y asciinema
 RUN apt-get install -y zsh-theme-powerlevel9k powerline fonts-powerline
