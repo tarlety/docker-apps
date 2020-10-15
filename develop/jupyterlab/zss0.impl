@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyterlab
-    APPVERSION=0.3.4
+    APPVERSION=0.3.5
     ;;
   "config")
     CONFIGKEYS="port image tf_ver keras_ver"
@@ -105,7 +105,7 @@ case $1 in
     ;;
   #------------------------------------------------------------------------------
   "usage")
-    echo $(basename $0) "app [up/down/token]"
+    echo $(basename $0) "app [up/down]"
     echo $(basename $0) "secret [token/kaggle/api/git]"
     ;;
 esac
