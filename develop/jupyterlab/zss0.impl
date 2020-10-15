@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=jupyterlab
-    APPVERSION=0.3.3
+    APPVERSION=0.3.4
     ;;
   "config")
     CONFIGKEYS="port image tf_ver keras_ver"
@@ -57,7 +57,7 @@ case $1 in
       shift
       case $1 in
         "up")
-          sudo mkdir -p ${STORE}/docker/home
+          mkdir -p ${STORE}/docker/home
           sudo chown 1000:100 ${STORE}/docker/home
           docker build -t ${IMAGE} --build-arg TF_VER=${TF_VER} --build-arg KERAS_VER=${KERAS_VER} -f Dockerfile .
           docker run -d --name ${APPNAME} \
