@@ -3,77 +3,77 @@
 # zss interface
 
 case $1 in
-	"app")
-		PROJECTNAME=docker-apps
-		APPNAME=blackbox
-		APPVERSION=0.1.0
-		;;
-	"config")
-		CONFIGKEYS="image"
-		declare -A CONFIG_DESCRIPTIONS
-		CONFIG_DESCRIPTIONS=( \
-			["image"]="The docker image to download." \
-			)
+    "app")
+        PROJECTNAME=docker-apps
+        APPNAME=blackbox
+        APPVERSION=0.2.0
+        ;;
+    "config")
+        CONFIGKEYS="image"
+        declare -A CONFIG_DESCRIPTIONS
+        CONFIG_DESCRIPTIONS=( \
+            ["image"]="The docker image to download." \
+            )
 
-		DEFAULT_IMAGE=prom/blackbox-exporter:v0.16.0
-		;;
-	"vars")
-		;;
-	"requirement")
-		echo - docker: $(which docker)
-		;;
-	"secret-create")
-		;;
-	"state-data-save")
-		mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
-		cd ${STORE}/docker
-		tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
-		cd - &> /dev/null
-		;;
-	"state-secret-load-post")
-		;;
-	"state-data-load")
-		if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
-		then
-			mkdir -p ${STORE}/docker
-			cd ${STORE}/docker
-			gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
-			echo ${STATENAME} > ${CONFIG}/base_data
-			cd - &> /dev/null
-		fi
-		;;
-	# AppImplementing Section: commands
-	#------------------------------------------------------------------------------
-	"command")
-		shift
-		case $1 in
-		"app")
-			shift
-			case $1 in
-				"up")
-					[ -f ${STORE}/docker/config/blackbox.yml ] || (
-            sudo mkdir -p ${STORE}/docker/config
-            sudo cp ${PWD}/example.yml ${STORE}/docker/config/blackbox.yml
-          )
-					sudo chown -R nobody:nogroup ${STORE}/docker
-					docker run -d --name ${APPNAME} \
-						--restart=always \
-            --network=host \
-						-v ${STORE}/docker/config:/config \
-						${IMAGE} \
-						  --config.file=/config/blackbox.yml
-					;;
-				"down")
-					docker stop ${APPNAME}
-					docker rm ${APPNAME}
-					;;
-			esac
-			;;
-		esac
-		;;
-	#------------------------------------------------------------------------------
-	"usage")
-		echo $(basename $0) "app [up/down]"
-		;;
+        DEFAULT_IMAGE=prom/blackbox-exporter:v0.18.0
+        ;;
+    "vars")
+        ;;
+    "requirement")
+        echo - docker: $(which docker)
+        ;;
+    "secret-create")
+        ;;
+    "state-data-save")
+        mv -f ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ${STORE}/data/${STATENAME}-bak-${APPNAME}-data.tgz.enc 2>/dev/null
+        cd ${STORE}/docker
+        tar -zc . | gpg -ear ${GPGKEY} -o ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc
+        cd - &> /dev/null
+        ;;
+    "state-secret-load-post")
+        ;;
+    "state-data-load")
+        if [ -e ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc ]
+        then
+            mkdir -p ${STORE}/docker
+            cd ${STORE}/docker
+            gpg -d ${STORE}/data/${STATENAME}-${APPNAME}-data.tgz.enc | tar xz
+            echo ${STATENAME} > ${CONFIG}/base_data
+            cd - &> /dev/null
+        fi
+        ;;
+    # AppImplementing Section: commands
+    #------------------------------------------------------------------------------
+    "command")
+        shift
+        case $1 in
+        "app")
+            shift
+            case $1 in
+            "up")
+                    [ -f ${STORE}/docker/config/blackbox.yml ] || (
+                        sudo mkdir -p ${STORE}/docker/config
+                        sudo cp ${PWD}/example.yml ${STORE}/docker/config/blackbox.yml
+                    )
+                    sudo chown -R nobody:nogroup ${STORE}/docker
+                    docker run -d --name ${APPNAME} \
+                        --restart=always \
+                        -p 127.0.0.1:9115:9115 \
+                        -v ${STORE}/docker/config:/config \
+                        ${IMAGE} \
+                          --config.file=/config/blackbox.yml
+                    ;;
+                "down")
+                    docker stop ${APPNAME}
+                    docker rm ${APPNAME}
+                    ;;
+            esac
+            ;;
+        esac
+        ;;
+    #------------------------------------------------------------------------------
+    "usage")
+        echo $(basename $0) "app [up/down]"
+        ;;
 esac
 
