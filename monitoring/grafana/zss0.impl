@@ -60,14 +60,15 @@ case $1 in
           sudo chown -R 472:472 ${STORE}/docker
           docker run -d --name ${APPNAME}-image-renderer \
             --restart=always \
-            --network=host \
+            -p 127.0.0.1:8081:8081 \
             -e ENABLE_METRICS="true" \
             -e BROWSER_TZ="${TIMEZONE}" \
             -e TZ="${TIMEZONE}" \
             ${IMAGE_RENDERER}
           docker run -d --name ${APPNAME} \
             --restart=always \
-            --network=host \
+            --link prometheus:prometheus \
+            -p 127.0.0.1:3000:3000 \
             -e GF_RENDERING_SERVER_URL="http://localhost:8081/render" \
             -e GF_RENDERING_CALLBACK_URL="http://localhost:3000/" \
             -e TZ="${TIMEZONE}" \

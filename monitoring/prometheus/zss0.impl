@@ -62,6 +62,8 @@ case $1 in
                     sudo chown -R nobody:nogroup ${STORE}/docker
                     docker run -d --name ${APPNAME} \
                         --restart=always \
+                        --link netdata:netdata \
+                        --link blackbox:blackbox \
                         -p 127.0.0.1:9090:9090 \
                         -v ${STORE}/docker/config/prometheus.yml:/etc/prometheus/prometheus.yml \
                         -v ${STORE}/docker/prometheus:/prometheus \
