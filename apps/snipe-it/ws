@@ -11,43 +11,43 @@ ENV=${ENV:-${PWD}/env}
 [ ! -e "${ENV}" ] && ENV=${PWD}/env.template
 
 case $1 in
-	"migrate")
-		docker exec -it ${IMAGE}-ap php artisan migrate
-		;;
-	"up")
-		$0 down
-		shift
-		DOCKER_OPTIONS=$*
-		docker run -d --name=${IMAGE}-db \
-			--restart=always \
-			--env-file ${ENV} \
-			-v ${STORE}/var/lib/mysql:/var/lib/mysql \
-			${DOCKER_OPTIONS} \
-			${DBIMAGE}
-		docker run -d --name=${IMAGE}-ap \
-			${DOCKER_NETWORK_ENVIRONMENT} \
-			--link ${IMAGE}-db:mysql \
-			--restart=always \
-			--env-file ${ENV} \
-			-v ${STORE}/var/log/apache2:/var/log/apache2 \
-			-v ${STORE}/var/lib/snipeit:/var/lib/snipeit \
-			${DOCKER_OPTIONS} \
-			${APIMAGE}
-		;;
-	"down")
-		docker stop ${IMAGE}-ap
-		docker stop ${IMAGE}-db
-		docker rm ${IMAGE}-ap
-		docker rm ${IMAGE}-db
-		;;
-	"clean")
-		$0 down
-		docker rmi ${APIMAGE}
-		docker rmi ${DBIMAGE}
-		;;
-	*)
-		echo $(basename $0) up ...
-		echo $(basename $0) down
-		echo $(basename $0) clean
-		;;
+    "migrate")
+        docker exec -it ${IMAGE}-ap php artisan migrate
+        ;;
+    "up")
+        $0 down
+        shift
+        DOCKER_OPTIONS=$*
+        docker run -d --name=${IMAGE}-db \
+            --restart=always \
+            --env-file ${ENV} \
+            -v ${STORE}/var/lib/mysql:/var/lib/mysql \
+            ${DOCKER_OPTIONS} \
+            ${DBIMAGE}
+        docker run -d --name=${IMAGE}-ap \
+            ${DOCKER_NETWORK_ENVIRONMENT} \
+            --link ${IMAGE}-db:mysql \
+            --restart=always \
+            --env-file ${ENV} \
+            -v ${STORE}/var/log/apache2:/var/log/apache2 \
+            -v ${STORE}/var/lib/snipeit:/var/lib/snipeit \
+            ${DOCKER_OPTIONS} \
+            ${APIMAGE}
+        ;;
+    "down")
+        docker stop ${IMAGE}-ap
+        docker stop ${IMAGE}-db
+        docker rm ${IMAGE}-ap
+        docker rm ${IMAGE}-db
+        ;;
+    "clean")
+        $0 down
+        docker rmi ${APIMAGE}
+        docker rmi ${DBIMAGE}
+        ;;
+    *)
+        echo $(basename $0) up ...
+        echo $(basename $0) down
+        echo $(basename $0) clean
+        ;;
 esac
