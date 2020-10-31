@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APIMAGE=snipe/snipe-it:v5.0.1
+APIMAGE=snipe/snipe-it:v5.0.4
 DBIMAGE=mariadb:10.5.6
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
