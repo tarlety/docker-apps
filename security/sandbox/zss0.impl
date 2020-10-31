@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.3.3
+    APPVERSION=0.4.0
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -68,19 +68,18 @@ case $1 in
           docker rm ${APPNAME}
           docker rmi ${IMAGE}
           ;;
-        "dotfiles")
-          (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.tmux.conf") < ~/.tmux.conf
-          (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.tmux.conf.local") < ~/.tmux.conf.local
-          (docker exec -u me -i ${APPNAME} /bin/bash -c "cat > /home/me/.vimrc") < ~/.vimrc
-          ;;
-        "ohmystuff")
-          docker exec -u me -i ${APPNAME} /bin/bash -c "cd
-            git clone --depth=1 https://github.com/amix/vimrc.git ~/.vim_runtime
-            sh ~/.vim_runtime/install_awesome_vimrc.sh
-            git clone https://github.com/gpakosz/.tmux.git ~/.tmux
-            ln -s -f .tmux/.tmux.conf
-            cp .tmux/.tmux.conf.local .
+        "env2")
+          $0 app granton
+          docker exec -u me -it ${APPNAME} /bin/bash -c "cd
+            sh <(curl https://raw.githubusercontent.com/t16ing/env2/master/bin/setup.sh -L)
+            install/01-base/install-zsh.sh
+            exec zsh -c 'source ~/.zshrc'
             "
+          docker exec -u me -it ${APPNAME} /bin/zsh -c "cd
+            install/05-optional/install-nvim.sh
+            install/05-optional/install-ranger.sh
+            "
+          $0 app grantoff
           ;;
         "ssh")
           PORT=$(docker port ${APPNAME} 22 | cut -d: -f2)
