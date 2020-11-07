@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.4.0
+    APPVERSION=0.4.1
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -104,7 +104,7 @@ case $1 in
   #------------------------------------------------------------------------------
   "usage")
     echo $(basename $0) "app [up/down/clean]"
-    echo $(basename $0) "app [dotfiles/ohmystuff/console/ssh/granton/grantoff]"
+    echo $(basename $0) "app [env2/console/ssh/granton/grantoff]"
     ;;
 esac
 
