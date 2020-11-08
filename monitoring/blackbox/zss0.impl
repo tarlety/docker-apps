@@ -58,7 +58,7 @@ case $1 in
                     sudo chown -R nobody:nogroup ${STORE}/docker
                     docker run -d --name ${APPNAME} \
                         --restart=always \
-                        -p 127.0.0.1:9115:9115 \
+                        --network=host \
                         -v ${STORE}/docker/config:/config \
                         ${IMAGE} \
                           --config.file=/config/blackbox.yml
