@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.4.1
+    APPVERSION=0.4.2
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -72,12 +72,13 @@ case $1 in
           $0 app granton
           docker exec -u me -it ${APPNAME} /bin/bash -c "cd
             sh <(curl https://raw.githubusercontent.com/t16ing/env2/master/bin/setup.sh -L)
-            install/01-base/install-zsh.sh
+            ~/install/01-base/install-zsh.sh
             exec zsh -c 'source ~/.zshrc'
             "
           docker exec -u me -it ${APPNAME} /bin/zsh -c "cd
-            install/05-optional/install-nvim.sh
-            install/05-optional/install-ranger.sh
+            ~/install/02-develop/install-vimplugin.sh
+            ~/install/05-optional/install-nvim.sh
+            ~/install/05-optional/install-ranger.sh
             "
           $0 app grantoff
           ;;
