@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.4.2
+    APPVERSION=0.4.3
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -76,6 +76,7 @@ case $1 in
             exec zsh -c 'source ~/.zshrc'
             "
           docker exec -u me -it ${APPNAME} /bin/zsh -c "cd
+            ~/install/05-optional/install-tmux-plugins.sh
             ~/install/02-develop/install-vimplugin.sh
             ~/install/05-optional/install-nvim.sh
             ~/install/05-optional/install-ranger.sh
