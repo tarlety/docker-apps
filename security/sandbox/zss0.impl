@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.5.0
+    APPVERSION=0.6.0
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -71,15 +71,16 @@ case $1 in
         "env2")
           $0 app granton
           docker exec -u me -it ${APPNAME} /bin/bash -c "cd
+            sudo apt-get update -y
             sh <(curl https://raw.githubusercontent.com/t16ing/env2/master/bin/setup.sh -L)
             ~/install/01-base/install-zsh.sh
             exec zsh -c 'source ~/.zshrc'
             "
           docker exec -u me -it ${APPNAME} /bin/zsh -c "cd
             ~/install/01-base/install-tmux-plugins.sh
-            ~/install/02-develop/install-nvim.sh
-            ~/install/02-develop/install-vimplugin.sh
+            ~/install/02-develop/install-vim-enhancement.sh
             ~/install/05-optional/install-ranger.sh
+            mv ~/.git ~/.git~
             "
           $0 app grantoff
           ;;
