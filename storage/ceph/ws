@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DOCKERIMAGE=ceph/daemon:v3.2.1-stable-3.2-luminous-debian-9-x86_64
-CEPHCOMMON_VERSION='=12.2.13-0ubuntu0.18.04.2'
+CEPHCOMMON_VERSION='=12.2.13-0ubuntu0.18.04.5'
 IMAGE=$(basename ${PWD})
 
 case $1 in
