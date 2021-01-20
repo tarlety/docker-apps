@@ -20,7 +20,7 @@ case $1 in
             ["retention_time"]="This determines when to remove old data. Defaults to 15d." \
             )
 
-        DEFAULT_IMAGE=prom/prometheus:v2.23.0
+        DEFAULT_IMAGE=prom/prometheus:v2.24.0
         DEFAULT_RETENTION_TIME='1095d'
         ;;
     "vars")
