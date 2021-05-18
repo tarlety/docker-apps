@@ -6,7 +6,7 @@ case $1 in
     "app")
         PROJECTNAME=docker-apps
         APPNAME=blackbox
-        APPVERSION=0.2.0
+        APPVERSION=0.3.0
         ;;
     "config")
         CONFIGKEYS="image"
@@ -15,7 +15,7 @@ case $1 in
             ["image"]="The docker image to download." \
             )
 
-        DEFAULT_IMAGE=prom/blackbox-exporter:v0.18.0
+        DEFAULT_IMAGE=prom/blackbox-exporter:v0.19.0
         ;;
     "vars")
         ;;
