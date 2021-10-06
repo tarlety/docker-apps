@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.6.0
+    APPVERSION=0.6.1
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -47,6 +47,7 @@ case $1 in
           docker build -t ${IMAGE} .
           docker run -d \
             --restart=always \
+            --cap-add=NET_ADMIN \
             -v ${STORE}/docker/data:/data \
             -v ${STORE}/docker/opt:/opt \
             -v ${STORE}/docker/store:/home/me/store \
@@ -85,9 +86,10 @@ case $1 in
           $0 app grantoff
           ;;
         "ssh")
+          shift
           PORT=$(docker port ${APPNAME} 22 | cut -d: -f2)
           ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "[localhost]:${PORT}"
-          ssh -o StrictHostKeyChecking=no -p $(docker port ${APPNAME} 22 | cut -d: -f2) me@localhost
+          ssh -o StrictHostKeyChecking=no -p $(docker port ${APPNAME} 22 | cut -d: -f2) me@localhost $*
           ;;
         "console")
           docker exec -it ${APPNAME} /bin/bash
