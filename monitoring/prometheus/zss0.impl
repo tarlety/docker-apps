@@ -10,7 +10,7 @@ case $1 in
     "app")
         PROJECTNAME=docker-apps
         APPNAME=prometheus
-        APPVERSION=0.7.6
+        APPVERSION=0.9.7
         ;;
     "config")
         CONFIGKEYS="image retention_time"
@@ -20,7 +20,7 @@ case $1 in
             ["retention_time"]="This determines when to remove old data. Defaults to 15d." \
             )
 
-        DEFAULT_IMAGE=prom/prometheus:v2.31.1
+        DEFAULT_IMAGE=prom/prometheus:v2.32.0
         DEFAULT_RETENTION_TIME='1095d'
         ;;
     "vars")
