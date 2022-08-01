@@ -17,7 +17,7 @@ case $1 in
       ["timezone"]="The grafana image renderer timezone." \
       )
 
-    DEFAULT_IMAGE=grafana/grafana:9.0.4
+    DEFAULT_IMAGE=grafana/grafana:9.0.5
     DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:3.4.2
     DEFAULT_TIMEZONE="$(cat /etc/timezone)"
     ;;
