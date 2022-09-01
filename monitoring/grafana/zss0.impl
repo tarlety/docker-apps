@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=grafana
-    APPVERSION=0.11.7
+    APPVERSION=0.11.8
     ;;
   "config")
     CONFIGKEYS="image image_renderer timezone"
@@ -17,7 +17,7 @@ case $1 in
       ["timezone"]="The grafana image renderer timezone." \
       )
 
-    DEFAULT_IMAGE=grafana/grafana:9.1.1
+    DEFAULT_IMAGE=grafana/grafana:9.1.2
     DEFAULT_IMAGE_RENDERER=grafana/grafana-image-renderer:3.4.2
     DEFAULT_TIMEZONE="$(cat /etc/timezone)"
     ;;
