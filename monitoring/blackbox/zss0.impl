@@ -15,7 +15,7 @@ case $1 in
             ["image"]="The docker image to download." \
             )
 
-        DEFAULT_IMAGE=prom/blackbox-exporter:v0.22.0
+        DEFAULT_IMAGE=prom/blackbox-exporter:v0.23.0
         ;;
     "vars")
         ;;
