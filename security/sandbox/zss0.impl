@@ -6,7 +6,7 @@ case $1 in
   "app")
     PROJECTNAME=docker-apps
     APPNAME=sandbox
-    APPVERSION=0.6.1
+    APPVERSION=0.7.0
     ;;
   "config")
     CONFIGKEYS="image hostname xsp"
@@ -78,9 +78,8 @@ case $1 in
             exec zsh -c 'source ~/.zshrc'
             "
           docker exec -u me -it ${APPNAME} /bin/zsh -c "cd
-            ~/install/01-base/install-tmux-plugins.sh
-            ~/install/02-develop/install-vim-enhancement.sh
-            ~/install/05-optional/install-ranger.sh
+            ~/install/01-base/install-tmux.sh
+            ~/install/01-base/install-vim.sh
             mv ~/.git ~/.git~
             "
           $0 app grantoff
