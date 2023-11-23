@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKERIMAGE=netdata/netdata:v1.38.1
+DOCKERIMAGE=netdata/netdata:v1.43.2
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
