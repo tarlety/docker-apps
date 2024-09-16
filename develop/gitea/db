@@ -1,7 +1,6 @@
 #!/bin/bash
 
-DBIMAGE=postgres:11.22-bullseye
-APIMAGE=gitea/gitea:1.21.0
+DOCKERIMAGE=gitea/gitea:1.21.0
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
@@ -12,21 +11,11 @@ case $1 in
 		$0 down
 		shift
 		DOCKER_OPTIONS=$*
-		docker run -d \
-			${DOCKER_CUSTOM_NETWORK} \
-			--restart=always \
-			--name ${IMAGE}-db \
-			-e POSTGRES_USER=gitea \
-			-e POSTGRES_PASSWORD=giteapass \
-			-e POSTGRES_DB=gitea \
-			-v ${STORE}/data:/var/lib/postgresql/data \
-			${DOCKER_OPTIONS} \
-			${DBIMAGE}
 		docker run -d --name=${IMAGE} \
 			--restart=always \
 			-v ${STORE}:/data \
 			${DOCKER_OPTIONS} \
-			${APIMAGE}
+			${DOCKERIMAGE}
 		;;
 	"down")
 		docker stop ${IMAGE}

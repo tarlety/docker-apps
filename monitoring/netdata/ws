@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKERIMAGE=netdata/netdata:v1.43.2
+DOCKERIMAGE=netdata/netdata:v1.44.1
 IMAGE=$(basename ${PWD})
 STOREBASE=${STOREBASE:-${HOME}/store}
 SECRET=${SECRET:-${STOREBASE}/.secret}
@@ -30,7 +30,7 @@ case $1 in
       -v /proc:/host/proc:ro \
       -v /sys:/host/sys:ro \
       -v /var/run/docker.sock:/var/run/docker.sock:ro \
-      --network=host \
+      -p 127.0.0.1:19999:19999 \
       --name ${IMAGE} \
       ${DOCKER_OPTIONS} \
       ${DOCKERIMAGE}

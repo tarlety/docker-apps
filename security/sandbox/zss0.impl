@@ -9,17 +9,19 @@ case $1 in
     APPVERSION=0.7.0
     ;;
   "config")
-    CONFIGKEYS="image hostname xsp"
+    CONFIGKEYS="image hostname xsp1 xsp2"
     declare -A CONFIG_DESCRIPTIONS
     CONFIG_DESCRIPTIONS=( \
       ["image"]="local docker image name." \
       ["hostname"]="docker container hostname." \
-      ["xsp"]="exposed ssh port." \
+      ["xsp1"]="exposed ssh port (default)." \
+      ["xsp2"]="exposed ssh port (secured)." \
       )
 
     DEFAULT_IMAGE=${APPNAME}:${APPVERSION}-$(date +%Y%m%d)
     DEFAULT_HOSTNAME=sandbox
-    DEFAULT_XSP=22
+    DEFAULT_XSP1=2203
+    DEFAULT_XSP2=2204
     ;;
   "vars")
     ;;
@@ -54,7 +56,8 @@ case $1 in
             -e DISPLAY=$DISPLAY \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -v $HOME/.Xauthority:/home/me/.Xauthority \
-            -p ${XSP}:22 \
+            -p ${XSP1}:22 \
+            -p ${XSP2}:2201 \
             --hostname ${HOSTNAME} \
             --name ${APPNAME} \
             ${IMAGE}
@@ -86,9 +89,9 @@ case $1 in
           ;;
         "ssh")
           shift
-          PORT=$(docker port ${APPNAME} 22 | cut -d: -f2)
-          ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "[localhost]:${PORT}"
-          ssh -o StrictHostKeyChecking=no -p $(docker port ${APPNAME} 22 | cut -d: -f2) me@localhost $*
+          PORT=$((docker port ${APPNAME} 22 2>/dev/null || docker port ${APPNAME} 2201) | cut -d: -f2)
+          ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "[localhost]:${PORT}" 2> /dev/null 1> /dev/null
+          ssh -o StrictHostKeyChecking=no -p ${PORT} me@localhost $* 2>/dev/null
           ;;
         "console")
           docker exec -it ${APPNAME} /bin/bash
